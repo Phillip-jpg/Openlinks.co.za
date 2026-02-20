@@ -1,0 +1,102 @@
+body{
+    margin: 0;
+    padding: 0;
+    
+}
+img{
+    width: 50vw;
+    height: 60vh;
+    border-radius: 10px;
+    z-index: 1;
+    box-shadow: 10px 10px 10px rgb(148, 148, 148);
+    margin: 20px;
+}
+section {
+    align-items: center;
+    justify-content: center;
+}
+h1{
+    text-align: center;
+    font-size: 30px;
+    font-style: italic;
+    letter-spacing: 1px;
+}
+h2,h3,h4{
+    text-align: center;
+    font-style: italic;
+    letter-spacing: 1px;
+}
+table{
+    width: 70%;
+}
+table td:nth-child(2){
+    background-color: rgb(91, 192, 222);
+}
+td{
+    border-top: solid 2px ;
+    border-bottom: solid 2px ;
+    border-right: solid 2px ;
+    border-left: solid 2px ;
+    text-align: center;
+    padding: 10px;
+}
+table{
+    margin: 20px;
+}
+p{
+    width: 90%;
+    margin: 20px;
+    text-align: justify;
+    letter-spacing: 1px;
+    line-height: 1.5;
+}
+span{
+    font-weight: bold;
+    padding: 2px;
+}
+ul{
+    width: 90%;
+    text-align: justify;
+    letter-spacing: 1px;
+    line-height: 1.5;
+}
+@media (max-width: 400px){
+    section {
+        width: 90%;
+    }
+    h1{
+        text-align: center;
+        font-size: 6vw;
+        width: 90%;
+    }
+    h2,h3,h4{
+        text-align: center;
+        font-size: 5vw;
+        width: 90%;
+    }
+    p{
+        padding: 2px;
+        width: 95%;
+        margin: 5px;
+        text-align: justify;
+       font-size: 4vw;
+    }
+    table{
+        width: 80%;
+        font-size: 3.5vw;
+        margin: 0;
+    }
+    ul{
+        width: 80%;
+        text-align: justify;
+        font-size: 3vw;
+    }
+    img{
+        width: 55vw;
+        height: 35vh;
+        border-radius: 10px;
+        z-index: 1;
+        box-shadow: 5px 5px 5px rgb(148, 148, 148);
+        margin: 10px;
+    }
+}

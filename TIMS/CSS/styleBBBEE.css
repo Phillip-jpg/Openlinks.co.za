@@ -1,0 +1,1268 @@
+body{
+  margin: 0px;
+  padding: 0px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+thead{
+  padding:2em !important;
+  height: 10px;
+
+}
+
+tr{
+  height: 10px;
+}
+
+tbody{
+  padding:2em !important;
+}
+.headings{
+  background-color: whitesmoke;
+}
+
+#registration_decision, #registration_decision2{
+  font-size: 20px;
+  text-decoration: underline;
+}
+#registration_decision:active, #registration_decision2:active{
+  color: blue;
+
+}
+/*Header #002060*/
+/*inner Div #DFDADA*/
+/*director info #2C2828*/
+/*next button dark blue #070944*/
+/*Company information div on company doc #595959*/
+/*BBBEElinks login page inner div #DADAEA*/
+/**/
+#incomplete_error{
+  display: none;
+  background-color: red;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  padding: 2%;
+}
+#user_profile{
+margin: auto;
+width: 150px;
+height: auto;
+border: double 2px ;
+border-radius: 20px;
+
+}
+
+#flexbox{
+  display: flex;
+}
+#flex1, #flex2, #flex3, #flex4, #flex5{
+  flex: 1 20%;
+  border: solid black 1px;
+  height: max-content;
+  align-items: center;
+  cursor: pointer;
+}
+#flex1:hover, #flex2:hover, #flex3:hover, #flex4:hover, #flex5:hover{
+  border: solid blue 2px;
+  
+}
+
+.inline{
+  display: inline;
+  cursor: pointer;
+}
+.inline:hover{
+  color:blue;
+}
+.displayForm{
+display: block;
+display: contents;
+}
+form { 
+  max-width:    80%;  
+  max-width: 870px;  
+  margin:   40px auto;
+  padding:  10px 20px 20px 20px;
+  background: #f4f7f8;
+  border-radius:  8px;
+}
+
+#behave{
+  width:100% !important;
+}
+
+form  input[type=text], form input[type=password], form input[type=number], form input[type=email], form select{
+  display: block;
+  width: 94%;
+  margin: 8px auto;
+  border-radius: 4px;
+  padding: 10px;
+  border: 2px solid #070944;
+  transition: 0.5s;
+}
+.input{
+  background: none;
+  border: none;
+  background-color: #DADAEA;
+  padding: 10px;
+  margin: 8px auto;
+  width: 94%;
+  border-radius: 4px;
+  color: white;
+  outline: none;
+  transition: 0.5s;
+  border: 2px solid #070944;
+  }
+  .input::placeholder{
+  color: #82858E;
+  }
+  .inputfocus{
+  background-color: #454955;
+  border: none;
+  border-bottom: 1px solid rgb(255, 196, 0);
+  transition: 0.5s;
+  }
+  .inputfocus::placeholder{
+  color: #454955;
+  }
+
+fieldset{
+border: double 3px;
+border-radius: 10px;
+color: #070944;
+
+}
+#smme_button{
+align-content: center;
+justify-items: center;
+justify-self: center;
+
+}
+label{
+margin: 10px;
+}
+
+
+h1{
+  text-align: center;
+  color:lightblue;
+  text-transform: uppercase;
+  height: 30px;
+  width: 80%;
+  border-radius: 10px;
+
+  }
+   
+  .PanelForm{
+    height: 100%;
+    width: 0%;
+    position: fixed;
+    z-index: 1;
+    background-color: #54565a;
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 30px;
+    top: 0;
+    left: 0;
+  }
+  .SubPanelForm{
+    height: 100%;
+    width: 0%;
+    position: fixed;
+    z-index: 2;
+    background-color: #DADAEA;
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 30px;
+    top: 0;
+    left: 0;
+  }
+
+  .panelBtn{
+    border: none;
+    background: none;
+    outline: none;
+    color: white;
+    background-color: #2E3136;
+    border: 1px solid #002060;
+    padding: 12px;
+    margin: 5px;
+    width: 80%;
+    font-size: 110%;
+    border-radius: 10px;
+    transition: 1s;
+    cursor: pointer;
+}
+.panelBtn:hover{
+    background-color: #002060;
+}
+  .closebtn {
+  position: absolute;
+  top: 0;
+  right: 25px;
+  font-size: 36px;
+  margin-left: 50px;
+  text-decoration: none;
+  color: white;
+  transition: 0.7s;
+  }
+  .closebtn:hover{
+    color: rgb(87, 206, 87);
+    }
+    .displaySide{
+    width: 200px !important;
+    }
+    .displaySidee{
+    width: 100%;
+    }
+
+    .paddin{
+  margin:3.5em;
+    }
+
+  .ParentRow{
+    display: flex;
+    flex-flow: row wrap;
+    justify-content:space-around ;
+    }
+    
+    .ChildRow{
+    flex-basis: 1;
+    }
+    
+    .Spacing{
+    margin: 2em;
+    }
+  
+  .logInBtnNavBar{
+    float: right;
+    margin: 0px 1%;
+    border: none;
+    background: none;
+    background-color: rgb(56, 164, 231);
+    color: white;
+    padding: 9px;
+    font-size: 120%;
+    letter-spacing: 1px;
+    outline: none;
+    border-radius: 10px;
+    transition: 0.7s;
+    cursor: pointer;
+    width: 12%;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+    .logInBtnNavBar:hover{
+    background-color: #454955;
+    }
+    
+    .header{
+    margin: 0px;
+    padding: 20px;
+    background-color:#002060;
+    /*border-bottom: 3px solid rgb(87, 206, 87);*/
+    }
+  
+  .area{
+    height: 100%;
+    width: 0;
+    position: fixed;
+    z-index: 1;
+    background-color: #2E3136;
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 60px;
+    text-align: center;
+    top: 0;
+    left: 0;
+    }
+    
+    #error2{
+    background-color: rgb(250, 125, 125);
+    width: 80%;
+    padding: 10px;
+    margin: 5px auto 10px;
+    border-radius: 10px;
+    color: rgb(102, 5, 5);
+    display: none;
+    transition: 0.7;
+    }
+
+    #display1{
+      color: rgb(255, 174, 0);
+      letter-spacing: 1px;
+      display: none;
+      margin-bottom: 50px;
+      padding: 20px;
+    }
+    
+
+    #SUH1, #SUH2, #SUH3{
+      background-color: #002060;;
+    width: 80%;
+    padding: 10px;
+    margin: 5px auto 10px;
+    border-radius: 10px;
+    display: none;
+    text-align: center;
+    }
+
+    .submitBtn {
+    background: none;
+    border: none;
+    background-color: rgb(56, 164, 231);
+    margin: 10px 0px;
+    padding: 10px;
+    border-radius: 10px;
+    outline: none;
+    color: white;
+    font-weight: bold;
+    letter-spacing: 1px;
+    width: 30%;
+    transition: 1s;
+    cursor: pointer;
+    }
+    
+    .submitBtn:hover {
+    background-color: #454955;
+    }
+    
+    .welcomeHead{
+    margin: 0px auto;
+    text-align: center;
+    margin-top: 50px;
+    font-size: 320%;
+    color: rgb(56, 164, 231);
+    height: 60px;
+    width: 0;
+    overflow: hidden;
+    transition: width 3s;
+    }
+    .welcomeSubHead{
+    text-align: center;
+    margin: 0px;
+    letter-spacing: 1px;
+    }
+
+    .intro{
+      width: 100%;
+      text-align: center;
+      margin-bottom: 50px;
+  }
+
+.abot{
+    padding-top: 10px;
+    width: 100%;
+    background-color: #454955;
+    border-top: 3px solid #002060;
+    text-align: center;
+    color: white;
+}
+
+.img{
+  width: 250px;
+  height:200px;
+  background-color: white;
+  border-radius: 5%;
+  margin: 10px auto;
+  overflow: hidden;
+  border: 4px solid white;
+  cursor: pointer;
+}
+
+.samoohead{
+  width: 40%;
+  margin: 20px auto 10px;
+  padding: 10px;
+  background-color: #353842;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.comma{
+  color: #002060;
+  font-size: 150%;
+}
+.footer{
+  border-top: 3px solid #002060;
+  padding: 20px;
+  text-align: center;
+  margin: 0px;
+  color: rgb(189, 185, 185);
+}
+
+#progress_tracker1{
+  background-color: rgb(149, 149, 247) ;
+  height: 35px;
+  vertical-align: middle;
+  text-align: center;
+  width: 50px;
+  text-transform: uppercase;
+  padding-top: 7px;
+  border-radius: 0 100% 100% 0;
+  font-weight: bold;
+  color: black;
+  
+}
+#progress_tracker2{
+background-color: rgb(149, 149, 247);
+color: black;
+left: -10px;
+height: 35px;
+width: 50px;
+text-align: center;
+text-transform: uppercase;
+padding-top: 7px;
+float: right;
+border-radius: 0 100% 100% 0;
+font-weight: bold;
+
+}
+
+#progress_tracker3{
+background-color: rgb(149, 149, 247);
+height: 35px;
+width: 50px;
+text-align: center;
+text-transform: uppercase;
+padding-top: 7px;
+float: right;
+left: -10px;
+border-radius: 0 100% 100% 0;
+font-weight: bold;
+color: black;
+
+
+}
+#progress_tracker4{
+  background-color: rgb(149, 149, 247) ;
+  height: 35px;
+  color: black;
+  left: -10px;
+  text-align: center;
+  width: 50px;
+  text-transform: uppercase;
+  padding-top:7px;
+  float: right;
+  border-radius: 0 100% 100% 0;
+  font-weight: bold;
+
+}
+#progress_tracker5{
+  background-color: rgb(149, 149, 247) ;
+  color: black;
+  height: 35px;
+  width: 50px;
+  text-align: center;
+  text-transform: uppercase;
+  padding-top: 7px;
+  left: -10px;
+  border: 10px rgb(115, 115, 226);
+  border-radius: 0 100% 100% 0;
+  
+  font-weight: bold;
+  
+}
+.bridge1{
+  margin-top: 15px;
+  background-color: rgb(149, 149, 247) ;
+  height: 10px;
+  float: right;
+  width: 30px;
+  border-collapse: collapse;
+  left: 30px;
+  
+}
+#chatFlexbox{
+    display: flex;
+    background-color: rgb(228, 222, 222);
+}
+#chat_flex{
+    flex: 2 70%;
+}
+#buttons_flex{
+    flex: 1 20%;
+}
+.chat_buttons{
+  border-radius: 40px;
+  background-color: rgb(28, 28, 161);
+  color: white;
+  margin: 5px;
+  padding: 5px;
+}
+.chat_buttons:hover{
+  background-color: rgb(26, 139, 26);
+}
+
+/* table*/
+#expense_header{
+  background-color: rgb(184, 184, 201);
+  height: 50px;
+  margin-top: 0;
+}
+#expense_title{
+  color: white;
+  font-size: 15px;
+  font: lighter;
+  text-transform: uppercase;
+  text-align: start;
+  padding: 10px ;
+
+}
+#expense_shell{
+  background-color:whitesmoke ;
+  width: 100%;
+}
+.expenses{
+  border-bottom: solid 2px rgb(27, 27, 119) !important;
+  border-left: none;
+  border-right: none;
+  border-top: none !important;
+  height: fit-content;
+  text-align: center;
+  font-weight: lighter;
+  width: 20%;
+  padding: 10px;
+}
+.added_expense{
+  border-collapse: collapse;
+  border-bottom: solid 2px rgb(27, 27, 119);
+  border-right: none;
+  border-left: none;
+  width: 20%;
+  text-align: start;
+  padding: 10px;
+  height: 15%;
+}
+
+
+
+#direct_expensesLabel{
+  text-align: center;
+  text-decoration: underline;
+  width: 40%;
+  font-weight: lighter;
+  padding: 5px;
+  margin: 5px 5px 5px 15px;
+  border: solid 1px black;
+}
+#direct_expensesLabel:hover {
+  background-color:rgb(142, 142, 155);
+}
+
+#direct_expensesLabe2:hover {
+  background-color:rgb(142, 142, 155);
+}
+#direct_expensesLabe2{
+  width: 50%;
+  margin: 5px;
+  padding: 5px;
+  font-weight: lighter;
+  text-decoration: underline;
+  text-align: center;
+  border-bottom: solid 1px black;
+  box-shadow: 10px 0px 10px rgb(206, 206, 206);
+  float: right;
+}
+
+.direct_expenseLabel{
+  background-color: lightblue;
+}
+#direct_expenseLabel2{
+  background-color: lightblue;
+}
+table{
+  /*height: 50%;*/
+
+  width: 100%;
+}
+.table_input{
+  border: none;
+}
+
+.datalisty{
+  display: initial !important;
+}
+
+#direct_summary{
+  width: 200px;
+  height: 300px;
+  float: left;
+  border: solid 1px ;
+}
+#indirect_summary{
+  width: 200px;
+  height: 300px;
+  float: right;
+  border: solid 1px ;
+}
+#summary_circle{
+  width: 100px;
+  height: 218;
+  border: solid 1px lightblue;
+  border-radius: 65%;
+  position: absolute;
+  
+}
+.heads{
+  text-align: center;
+  text-transform: capitalize;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 100;
+  border-radius: 0 10px 0 10px;
+  width: 20%;
+  box-shadow: 3px 0 8px rgb(214, 214, 214);
+}
+.totals{
+  border-top: solid 1px black !important;
+  border-bottom: double 2px black !important;
+}
+#smme_button, #company_button, #consult_button{
+    align-items: center;
+    border: none;
+    background: none;
+    background-color: rgb(56, 164, 231);
+    color: white;
+    padding: 9px;
+    font-size: 120%;
+    letter-spacing: 1px;
+    outline: none;
+    border-radius: 10px;
+    transition: 0.7s;
+    cursor: pointer;
+    width: 15%;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+#statements_section{
+  display: none;
+  padding: 3%;
+
+  border: solid 1px;
+  
+}
+
+
+@media screen and (max-width: 320px){
+  .progress_display{
+
+    max-width: 100%;
+    margin:   40px auto;
+    padding:  10px 20px 20px 20px;
+    background: #f4f7f8;
+    border: double blue 2px;
+    border-radius:  20px;
+    }
+    .arrow-left{
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-top: 40px solid blue;
+    border-bottom: 40px solid blue;
+    border-left: 40px solid transparent;
+    }
+    .arrow-ctr{
+    display: inline-block;
+    width: 150px;
+    background:blue;
+    min-height: 80px;
+    position: relative;
+    left: -4px;
+    }
+    .arrow-right{
+    display: inline-block;
+    height:0;
+    border-top: 40px solid transparent;
+    border-bottom: 40px solid transparent;
+    border-left: 40px solid blue;
+    position: relative;
+    left: -8px;
+    }
+    h4{
+    
+    border: solid blue;
+    border-radius: 37%;
+    font-size: 12px;
+    width: 150px;
+    text-align: center;
+    }
+    
+    #registration_decision, #registration_decision2{
+      font-size: 20px;
+      text-decoration: underline;
+    }
+    #registration_decision:active, #registration_decision2:active{
+      color: blue;
+    
+    }
+    /*Header #002060*/
+    /*inner Div #DFDADA*/
+    /*director info #2C2828*/
+    /*next button dark blue #070944*/
+    /*Company information div on company doc #595959*/
+    /*BBBEElinks login page inner div #DADAEA*/
+    /**/
+    
+    #user_profile{
+    width: 290px;
+    height: 280px;
+    border: double 2px ;
+    border-radius: 20px;
+    
+    }
+    
+    .inline{
+      display: inline;
+      cursor: pointer;
+    }
+    .inline:hover{
+      color:blue;
+    }
+    .displayForm{
+    display: block;
+    display: contents;
+    }
+
+    .propic{
+      border: solid 1px;
+      border-radius: 100%;
+      max-width: 150px;
+    }
+    form { 
+      max-width:    80%;  
+      max-width: 700px;  
+      margin:   40px auto;
+      padding:  10px 20px 20px 20px;
+      background: #f4f7f8;
+      border-radius:  8px;
+    }
+    
+    form  input[type=text], form input[type=number], form input[type=email], form select{
+      display: block;
+      width: 94%;
+      margin-top: 15px;
+      border-radius: 4px;
+      padding: 10px;
+      border: 2px solid #070944;
+    }
+    
+    fieldset{
+    border: double 3px;
+    border-radius: 10px;
+    color: #070944;
+    
+    }
+    #smme_button{
+    align-content: center;
+    justify-items: center;
+    justify-self: center;
+    
+    }
+    label{
+    margin: 10px;
+    }
+    
+    
+    h1{
+      text-align: center;
+      color: #070944;
+      text-transform: uppercase;
+      height: 20px;
+      width: 80%;
+      border-radius: 10px;
+      }
+       
+      .PanelForm{
+        height: 100%;
+        width: 0%;
+        position: fixed;
+        z-index: 1;
+        background-color: #54565a;
+        overflow-x: hidden;
+        transition: 0.5s;
+        padding-top: 30px;
+        top: 0;
+        left: 0;
+      }
+      .SubPanelForm{
+        height: 100%;
+        width: 0%;
+        position: fixed;
+        z-index: 2;
+        background-color: #DADAEA;
+        overflow-x: hidden;
+        transition: 0.5s;
+        padding-top: 30px;
+        top: 0;
+        left: 0;
+      }
+    
+      .panelBtn{
+        border: none;
+        background: none;
+        outline: none;
+        color: white;
+        background-color: #2E3136;
+        border: 1px solid #002060;
+        padding: 12px;
+        margin: 5px;
+        width: 80%;
+        font-size: 110%;
+        border-radius: 10px;
+        transition: 1s;
+        cursor: pointer;
+    }
+    .panelBtn:hover{
+        background-color: #002060;
+    }
+      .closebtn {
+      position: absolute;
+      top: 0;
+      right: 25px;
+      font-size: 36px;
+      margin-left: 50px;
+      text-decoration: none;
+      color: white;
+      transition: 0.7s;
+      }
+      .closebtn:hover{
+        color: rgb(87, 206, 87);
+        }
+        .displaySide{
+        width: 200px !important;
+        }
+        .displaySidee{
+        width: 100%;
+        }
+    
+        .paddin{
+      margin:3.5em;
+        }
+    
+      .ParentRow{
+        display: flex;
+        flex-flow: row wrap;
+        justify-content:space-around ;
+        }
+        
+        .ChildRow{
+        flex-basis: 1;
+        }
+        
+        .Spacing{
+        margin: 2em;
+        }
+      
+      .logInBtnNavBar{
+        float: right;
+        margin: 0px 0px;
+        border: none;
+        background: none;
+        background-color: rgb(56, 164, 231);
+        color: white;
+        padding: 9px;
+        font-size: 120%;
+        letter-spacing: 1px;
+        outline: none;
+        border-radius: 10px;
+        transition: 0.7s;
+        cursor: pointer;
+        width: 15%;
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        }
+        .logInBtnNavBar:hover{
+        background-color: #454955;
+        }
+        
+        .header{
+        margin: 0px;
+        padding: 20px;
+        background-color:#002060;
+        /*border-bottom: 3px solid rgb(87, 206, 87);*/
+        }
+      
+      .area{
+        height: 100%;
+        width: 0;
+        position: fixed;
+        z-index: 1;
+        background-color: #2E3136;
+        overflow-x: hidden;
+        transition: 0.5s;
+        padding-top: 60px;
+        text-align: center;
+        top: 0;
+        left: 0;
+        }
+        
+        #error2{
+        background-color: rgb(250, 125, 125);
+        width: 80%;
+        padding: 10px;
+        margin: 5px auto 10px;
+        border-radius: 10px;
+        color: rgb(102, 5, 5);
+        display: none;
+        transition: 0.7;
+        }
+    
+        #display1{
+          color: rgb(255, 174, 0);
+          letter-spacing: 1px;
+          display: none;
+          margin-bottom: 50px;
+          padding: 20px;
+        }
+        
+        .input{
+        background: none;
+        border: none;
+        background-color: #DADAEA;
+        padding: 10px;
+        margin: 8px auto;
+        width: 60%;
+        border-radius: 5px;
+        color: white;
+        outline: none;
+        transition: 1s;
+        
+        }
+        .input::placeholder{
+        color: #82858E;
+        }
+        .inputfocus{
+        background-color: #454955;
+        border: none;
+        border-bottom: 1px solid rgb(255, 196, 0);
+        transition: 0.5s;
+        }
+        .inputfocus::placeholder{
+        color: #454955;
+        }
+        #SUH1, #SUH2, #SUH3{
+          background-color: #002060;;
+        width: 80%;
+        padding: 10px;
+        margin: 5px auto 10px;
+        border-radius: 10px;
+        display: none;
+        text-align: center;
+        }
+    
+        .submitBtn {
+        background: none;
+        border: none;
+        background-color: rgb(56, 164, 231);
+        margin: 10px 0px;
+        padding: 10px;
+        border-radius: 10px;
+        outline: none;
+        color: white;
+        font-weight: bold;
+        letter-spacing: 1px;
+        width: 30%;
+        transition: 1s;
+        cursor: pointer;
+        }
+        
+        .submitBtn:hover {
+        background-color: #454955;
+        }
+        
+        .welcomeHead{
+        margin: 0px auto;
+        text-align: center;
+        margin-top: 50px;
+        font-size: 320%;
+        color: rgb(56, 164, 231);
+        height: 60px;
+        width: 0;
+        overflow: hidden;
+        transition: width 3s;
+        }
+        .welcomeSubHead{
+        text-align: center;
+        margin: 0px;
+        letter-spacing: 1px;
+        }
+    
+        .intro{
+          width: 100%;
+          text-align: center;
+          margin-bottom: 50px;
+      }
+    
+    .abot{
+        padding-top: 10px;
+        width: 100%;
+        background-color: #454955;
+        border-top: 3px solid #002060;
+        text-align: center;
+        color: white;
+    }
+    
+    .img{
+      width: 250px;
+      height:200px;
+      background-color: white;
+      border-radius: 5%;
+      margin: 10px auto;
+      overflow: hidden;
+      border: 4px solid white;
+      cursor: pointer;
+    }
+    
+    .samoohead{
+      width: 40%;
+      margin: 20px auto 10px;
+      padding: 10px;
+      background-color: #353842;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    
+    .comma{
+      color: #002060;
+      font-size: 150%;
+    }
+    .footer{
+      border-top: 3px solid #002060;
+      padding: 20px;
+      text-align: center;
+      margin: 0px;
+      color: rgb(189, 185, 185);
+    }
+   
+    /**/
+    #progress_tracker1{
+      background-color: rgb(149, 149, 247) ;
+      height: 35px;
+      vertical-align: middle;
+      text-align: center;
+      width: 50px;
+      text-transform: uppercase;
+      padding-top: 7px;
+      border-radius: 100%;
+      font-weight: bold;
+      color: black;
+      
+    }
+    #progress_tracker2{
+    background-color: rgb(149, 149, 247);
+    color: black;
+    
+    height: 35px;
+    width: 50px;
+    text-align: center;
+    text-transform: uppercase;
+    padding-top: 7px;
+    float: right;
+    border-radius: 100%;
+    font-weight: bold;
+    
+    }
+    
+    #progress_tracker3{
+    background-color: rgb(149, 149, 247);
+    height: 35px;
+    width: 50px;
+    text-align: center;
+    text-transform: uppercase;
+    padding-top: 7px;
+    float: right;
+    border-radius: 100%;
+    font-weight: bold;
+    color: black;
+    
+    
+    }
+    #progress_tracker4{
+      background-color: rgb(149, 149, 247) ;
+      height: 35px;
+      color: black;
+      
+      text-align: center;
+      width: 50px;
+      text-transform: uppercase;
+      padding-top:7px;
+      float: right;
+      border-radius: 100%;
+      font-weight: bold;
+    
+    }
+    #progress_tracker5{
+      background-color: rgb(149, 149, 247) ;
+      color: black;
+      height: 35px;
+      width: 50px;
+      text-align: center;
+      text-transform: uppercase;
+      padding-top: 7px;
+      float: right;
+      border: 10px rgb(115, 115, 226);
+      border-radius: 100%;
+      
+      font-weight: bold;
+      
+    }
+    .bridge1{
+      margin-top: 15px;
+      background-color: rgb(149, 149, 247) ;
+      height: 10px;
+      float: right;
+      width: 30px;
+      border-collapse: collapse;
+      left: -30px;
+    }
+    #chatFlexbox{
+        display: flex;
+        background-color: rgb(228, 222, 222);
+    }
+    #chat_flex{
+        flex: 2 70%;
+    }
+    #buttons_flex{
+        flex: 1 20%;
+    }
+    .chat_buttons{
+      border-radius: 40px;
+      background-color: rgb(28, 28, 161);
+      color: white;
+      margin: 5px;
+      padding: 5px;
+    }
+    .chat_buttons:hover{
+      background-color: rgb(26, 139, 26);
+    }
+ 
+   
+    /* table*/
+    #expense_header{
+      background-color: rgb(6, 6, 10);
+      height: 50px;
+      margin-top: 0;
+    }
+    #expense_title{
+      color: white;
+      font-size: 15px;
+      font: lighter;
+      text-transform: uppercase;
+      text-align: start;
+      padding: 10px ;
+    
+    }
+    #expense_shell{
+      background-color:rgb(114, 89, 155) ;
+      width: 100%;
+    }
+    .expenses{
+      border-bottom: solid 2px rgb(27, 27, 119);
+
+      border-left: none;
+      border-right: none;
+      height: fit-content;
+      text-align: center;
+      font-weight: lighter;
+      width: 20%;
+      padding: 10px;
+    }
+    .added_expense{
+      border-collapse: collapse;
+      border-bottom: solid 2px rgb(27, 27, 119);
+      border-right: none;
+      border-left: none;
+      width: 20%;
+      text-align: start;
+      padding: 10px;
+      height: 15%;
+    }
+    #direct_expensesLabel{
+      text-align: center;
+      text-decoration: underline;
+      width: 45%;
+      font-weight: lighter;
+      padding: 5px;
+      margin: 5px 5px 5px 15px;
+      border: solid 1px black;
+    }
+    #flex{
+      display: flex;
+    }
+    #flex1{
+      flex: 1;
+      float: right;
+    }
+    #flex2{
+      flex: 2;
+      float: left;
+    }
+    
+    #direct_expensesLabe2{
+      width: 45%;
+      margin: 5px;
+      padding: 5px;
+      font-weight: lighter;
+      text-decoration: underline;
+      text-align: center;
+      
+      float: right;
+    }
+    
+    #direct_expenseLabel1:hover {
+      background-color: lightblue;
+    }
+    table{
+      height: 70%;
+      background-color: white;
+      width: 100%;
+    }
+    .table_input{
+      border: none;
+      
+    }
+    
+    #direct_summary{
+      width: 200px;
+      height: 300px;
+      float: left;
+      border: solid 1px ;
+    }
+    #indirect_summary{
+      width: 200px;
+      height: 300px;
+      float: right;
+      border: solid 1px ;
+    }
+    #summary_circle{
+      width: 100px;
+      height: 218;
+      border: solid 1px lightblue;
+      border-radius: 65%;
+      position: absolute;
+      
+    }
+    
+    #smme_button, #company_button, #consult_button{
+        align-items: center;
+        border: none;
+        background: none;
+        background-color: rgb(56, 164, 231);
+        color: white;
+        padding: 9px;
+        font-size: 120%;
+        letter-spacing: 1px;
+        outline: none;
+        border-radius: 10px;
+        transition: 0.7s;
+        cursor: pointer;
+        width: 15%;
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+}
+.table-cell{
+  cursor:pointer;
+  }
+/* .summary_display{
+
+} */

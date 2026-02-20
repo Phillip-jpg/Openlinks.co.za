@@ -1,0 +1,60 @@
+<?PHP
+$filepath = realpath(dirname(__FILE__));
+include_once($filepath.'/../config/sql.config.php');
+include_once($filepath.'/../config/sql.admin.php');
+include_once($filepath.'/../config/config.php');
+include_once($filepath.'/../classes/Generic.php');
+include_once($filepath.'/../lib/Session.php');
+include_once($filepath.'/../helpers/val.php');
+
+class Admin extends Generic{
+    public $classname="ADMIN";
+    public $id="ADMIN_ID";
+    protected $var=DB_NAME_6;
+    protected $var2=DB_NAME_1;
+    protected $var3=DB_NAME_3;
+    protected $var4=DB_NAME_4;
+    protected $var5=DB_NAME_5;
+    protected $SIGNUP_SELECT=SIGNUP_SELECT;
+    protected $SIGNUP_INSERT=ADMIN_SIGNUP_INSERT;
+    protected $SECTOR_INSERT=ADMIN_SECTOR_INSERT;
+    protected $DEFAULTPROFILE_SELECT=ADMIN_DEFAULTPROFILE_SELECT;
+    protected $DEFAULTPROFILE_INSERT=ADMIN_DEFAULTPROFILE_INSERT;
+    protected $EMAIL_VERIFICATION_INSERT = EMAIL_VERIFICATION_INSERT;
+    protected $VERIFY_ACCOUNT_SELECT=ADMIN_VERIFY_ACCOUNT_SELECT;
+    protected $VERIFY_ACCOUNT_UPDATE=ADMIN_VERIFY_ACCOUNT_UPDATE;
+    protected $LOGIN_SELECT=ADMIN_LOGIN_SELECT;
+    protected $PIMG_SELECT=ADMIN_PIMG_SELECT;
+    protected $TEMP_UPDATE=ADMINT_TEMP_UPDATE;
+    protected $PASSWORD_UPDATE=ADMIN_PASSWORD_UPDATE;
+    protected $PASSWORD_SELECT = ADMIN_PASSWORD_SELECT;
+    protected $ADMIN_SELECT=ADMIN_SELECT;
+    protected $PROGRESS_PROCESS_SELECT=PROGRESS_PROCESS_SELECT;
+    protected $PROCESS_AVERAGE_TIME_SELECT=PROCESS_AVERAGE_TIME_SELECT;
+    protected $PAGE_VISITS_GRAPGH=PAGE_VISITS_GRAPGH;
+    protected $MAX_PAGE_VISITS_SELECT=MAX_PAGE_VISITS_SELECT;
+    protected $MIN_PAGE_VISITS_SELECT=MIN_PAGE_VISITS_SELECT;
+    protected $AVERAGE_PAGE_VISITS_SELECT=AVERAGE_PAGE_VISITS_SELECT;
+    protected $SEARCH_GRAPGH_SELECT=SEARCH_GRAPGH_SELECT;
+    protected $MOST_SEARCHED_NAME_SELECT=MOST_SEARCHED_NAME_SELECT;
+    protected $MOST_SEARCHED_INDUSTRY=MOST_SEARCHED_INDUSTRY;
+    protected $MOST_SEARCHED_PRODUCT=MOST_SEARCHED_PRODUCT;
+    protected $CURRENT_DAY_SEARCHES_SELECT=CURRENT_DAY_SEARCHES_SELECT;
+    protected $ALL_EMAILS_SENT_SELECT=ALL_EMAILS_SENT_SELECT;
+    protected $ALL_CLICKED_EMAILS_SELECT=ALL_CLICKED_EMAILS_SELECT;
+    protected $TOTAL_NUMBER_USERS=TOTAL_NUMBER_USERS;
+    protected $TOTAL_COMPANY_USERS=TOTAL_COMPANY_USERS;
+    protected $TOTAL_SMME_USERS=TOTAL_SMME_USERS;
+    protected $MORE_INFO = ADMIN_MOREINFO;
+    protected $VIEWS_INSERT=COMPANY_VIEWS_INSERT;
+    protected $FETCH_LINKS = ADMIN_VIEW_MORE_LINK_SELECT;
+    protected $URL_SELECT = ADMIN_URL_SELECT;
+    protected $FILEUPLOAD_SELECT = FILE_UPLOADS_SELECT;
+    protected $ALL_CONSULTANTS_SELECT = ALL_CONSULTANTS_SELECT;
+    protected $MORE_INFO_CHART = ADMIN_MOREINFO_CHART;
+    protected $PRODUCTS = ADMIN_PRODUCT_SELECT;
+    protected $TOVIEW1_SELECT1=SMME_TOVIEW1_SELECT1;
+    protected $TOVIEW2_SELECT2=COMPANY_TOVIEW1_SELECT1;
+
+}
+

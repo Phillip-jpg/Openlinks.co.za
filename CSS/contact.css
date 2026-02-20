@@ -1,0 +1,46 @@
+.flex_container{
+    display: flex !important;
+}
+.flex_container1{
+flex: 2;
+width: 40% !important;
+
+}
+.flex_container1 img{
+    width: 350px;
+    height: 350px;
+    
+    
+}
+.flex_container2{
+flex: 2;
+width: 60% !important;
+margin-left: 50px !important;
+}
+.contact_input{
+    margin: 10px 2px 20px 2px;
+}
+#contact_form input[type='text'],input[type='email'], textarea, select{
+    border: solid 2px rgba(161, 161, 161, 0.863);
+    border-radius: 15px;
+    
+}
+#contact_form input[type='text'],input[type='email'], select{
+  height: 35px !important;  
+}
+.contact_img{
+    width: 90%;
+    height:90%;
+}
+
+@media screen and (max-width:994px){
+    .contact_img{
+        width: 80%;
+        height:50%;
+        /* margin-bottom: 611px; */
+    }
+
+
+}
+
+

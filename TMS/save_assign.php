@@ -1,0 +1,321 @@
+<?php
+include 'db_connect.php';
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+/* -----------------------------
+   ✅ Decode ALL encrypted IDs (job, task, activity, team)
+   and map them back to the expected $_GET keys
+------------------------------ */
+function decode_id_param($key) {
+    if (!isset($_GET[$key]) || $_GET[$key] === '') {
+        die("Missing parameter: " . htmlspecialchars($key));
+    }
+    $decoded = base64_decode($_GET[$key], true); // strict
+    if ($decoded === false || !ctype_digit($decoded)) {
+        die("Invalid parameter: " . htmlspecialchars($key));
+    }
+    return (int)$decoded;
+}
+
+/**
+ * Your new encrypted URL uses:
+ *  job, task, activity, team
+ * but your existing code expects:
+ *  project_id, task_id, activity_id, team_id
+ */
+if (isset($_GET['job']))      $_GET['project_id']  = decode_id_param('job');
+if (isset($_GET['task']))     $_GET['task_id']     = decode_id_param('task');
+if (isset($_GET['activity'])) $_GET['activity_id'] = decode_id_param('activity');
+if (isset($_GET['team']))     $_GET['team_id']     = decode_id_param('team');
+
+/* -----------------------------
+   ✅ Your existing code below (only changed: remove "already assigned" restriction)
+------------------------------ */
+
+$fullNames = array();
+
+// Check if the request method is GET and if project_id and task_id are present in the URL
+if (isset($_GET['project_id']) && isset($_GET['task_id']) && isset($_GET['activity_id'])) {
+    // Get the project ID and task ID from the URL
+    $projectId = $_GET['project_id'];
+    $taskId = $_GET['task_id'];
+    $activityId = $_GET['activity_id'];
+    $team_id = $_GET['team_id'];
+
+    // Fetch data from the 'user_productivity' table based on the given task ID
+    $qry = $conn->query("SELECT * FROM user_productivity WHERE id = $activityId");
+    
+    if ($qry) {
+        $row = $qry->fetch_assoc();
+        foreach ($row as $k => $v) {
+            $$k = $v;
+        }
+    }
+    
+    $qry = $conn->query("SELECT 
+        GROUP_CONCAT(ts.team_members SEPARATOR ', ') AS team_members, 
+        pl.manager_id, 
+        pl.CLIENT_ID, 
+        ts.team_id 
+    FROM project_list pl
+    JOIN team_schedule ts ON ts.team_id = pl.team_ids
+    WHERE pl.id = " . $projectId . "
+      AND ts.status=1
+    GROUP BY pl.manager_id, pl.CLIENT_ID, ts.team_id;
+    ")->fetch_array();
+
+    $userIdsString = $qry['team_members'];
+    $managerId = $qry['manager_id'];
+    $client_id = $qry['CLIENT_ID'];
+                
+    $userIdsArray = array_map('intval', explode(',', $userIdsString));
+    $userIdsClause = implode(',', $userIdsArray);
+
+
+    // Member qualification:
+    // 1) normal members qualify via members_and_worktypes
+    // 2) entity users (type=2) qualify when this work type belongs to their own task_list (creator_id)
+    $query = "
+        SELECT DISTINCT u.id AS member_id
+        FROM users u
+        LEFT JOIN members_and_worktypes mw
+            ON mw.member_id = u.id
+           AND mw.work_type_id = $taskId
+        LEFT JOIN task_list tl
+            ON tl.id = $taskId
+           AND tl.creator_id = u.id
+        WHERE u.id IN ($userIdsClause)
+          AND (
+                mw.member_id IS NOT NULL
+                OR (u.type = 2 AND tl.id IS NOT NULL)
+          )
+    ";
+    $result = $conn->query($query);
+
+    if ($result->num_rows == 0) {
+        echo "<div style='color:red; font-weight:bold'>Non of the members you selected for the job qualify for this worktype !</div>";
+        echo "<br>";
+    } elseif ($result->num_rows > 0) {
+
+        $matchingMemberIds = array();
+
+        while ($row = $result->fetch_assoc()) {
+            $matchingMemberIds[] = $row['member_id'];
+        }
+
+        // ✅ UPDATED: Members can be assigned to other worktypes/activities
+        $memberIdsClause = implode(',', array_map('intval', $matchingMemberIds));
+
+        $query2 = "SELECT CONCAT(firstname, ' ', lastname) AS full_name, id FROM users WHERE id IN ($memberIdsClause)";
+        $result2 = $conn->query($query2);
+
+        $fullNames = array();
+
+        while ($row = $result2->fetch_assoc()) {
+            $fullNames[$row['id']] = $row['full_name'];
+        }
+
+        if (empty($fullNames)) {
+            echo "No members";
+        } else {
+            foreach ($fullNames as $userId => $fullName) {
+                $selected = '';
+                if (isset($_POST['user_id'])) {
+                    $userIdsArray = is_array($_POST['user_id']) ? $_POST['user_id'] : explode(',', $_POST['user_id']);
+                    $selected = in_array($userId, $userIdsArray) ? 'selected' : '';
+                }
+            }
+        }
+    }
+}
+?>
+
+<form action="delete_assigned.php" id="assign-delete" method="post">
+    <input type="hidden" name="task_id" value="<?php echo isset($taskId) ? $taskId : '' ?>">
+    <input type="hidden" name="project_id" value="<?php echo isset($projectId) ? $projectId : '' ?>">
+    <input type="hidden" name="activity_id" value="<?php echo isset($activityId) ? $activityId : '' ?>">
+</form>
+
+<div class="col-lg-12">
+    <form action="save_assigned_database.php" id="assign-save" method="post">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="callout callout-info">
+                    <div class="col-md-12">
+                        <div class="row">
+                            <input type="hidden" name="task_id" value="<?php echo isset($taskId) ? $taskId : '' ?>">
+                            <input type="hidden" name="project_id" value="<?php echo isset($projectId) ? $projectId : '' ?>">
+                            <input type="hidden" name="activity_id" value="<?php echo isset($activityId) ? $activityId : '' ?>">
+                            <input type="hidden" name="manager_id" value="<?php echo isset($managerId) ? $managerId : '' ?>">
+                            <input type="hidden" name="client_id" value="<?php echo isset($client_id) ? $client_id : '' ?>">
+                            <input type="hidden" name="team_id" value="<?php echo isset($team_id) ? $team_id : '' ?>">
+
+                            <div class="col-sm-6">
+                                <?php
+                                $qry = $conn->query("SELECT task_name FROM task_list WHERE id = $taskId");
+                                if ($qry) {
+                                    $row = $qry->fetch_assoc();
+                                    echo "<div style='color: #007BFF; font-weight:bold'>" . $row['task_name'] . "</div>";
+                                }
+                                ?>
+                                <?php echo "<br>" ?>
+                                <dt><b class="border-bottom border-primary">Activity Name</b></dt>
+                                <dd><?php echo ucwords($name) ?></dd>
+                                <dt><b class="border-bottom border-primary">Duration (in days)</b></dt>
+                                <dd><?php echo html_entity_decode($duration) ?></dd>
+                                <dt><b class="border-bottom border-primary">Comment</b></dt>
+                                <dd><?php echo html_entity_decode($comment) ?></dd>
+                                <dt><b class="border-bottom border-primary">No of Resources</b></dt>
+                                <dd><?php echo html_entity_decode($resources) ?></dd>
+                                </dl>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="user_id" class="control-label">
+                                        Select Members (Resources)
+                                        <span style="font-weight:normal; color:#007BFF">select <?php echo $resources; ?> at most</span>
+                                    </label>
+
+                                    <select class="form-control form-control-sm select2" name="user_id" required>
+                                        <option value="">Select Resources</option>
+                                        <?php
+                                        foreach ($fullNames as $userId => $fullName) {
+                                            $selected = '';
+                                            if (isset($_POST['user_id']) && isset($task_ids)) {
+                                                $userIdsArray = is_array($_POST['user_id']) ? $_POST['user_id'] : explode(',', $_POST['user_id']);
+                                                $selected = in_array($userId, $userIdsArray) ? 'selected' : '';
+                                            }
+                                            echo "<option value='$userId' $selected>$fullName</option>";
+                                        }
+                                        ?>
+                                    </select>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="card-footer border-top border-info">
+        <div class="d-flex w-100 justify-content-center align-items-center">
+	            <button
+                    id="btn-save-assign"
+	                class="btn btn-flat bg-gradient-primary mx-2"
+	                style="border-radius: 3px"
+	                type="submit"
+	                form="assign-save">
+	                Save
+	            </button>
+            <button class="btn btn-flat bg-gradient-secondary mx-2" style="border-radius: 3px" onclick="redirectToAssignDuties(<?php echo $projectId; ?>)">Back</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function redirectToAssignDuties(projectId) {
+    var url = 'index.php?page=assign_duties&id=' + projectId;
+    window.location.href = url;
+}
+
+$(document).ready(function(){
+    const $assignForm = $('#assign-save');
+    const $saveBtn = $('#btn-save-assign');
+    const defaultSaveText = $saveBtn.text();
+
+    $assignForm.on('submit', function(e){
+        e.preventDefault();
+
+        const selectedUser = String($assignForm.find('[name="user_id"]').val() || '').trim();
+        if (!selectedUser) {
+            if (typeof alert_toast === 'function') {
+                alert_toast('Please select a member before saving.', 'warning');
+            } else {
+                alert('Please select a member before saving.');
+            }
+            return;
+        }
+
+        if ($saveBtn.prop('disabled')) {
+            return;
+        }
+
+        $saveBtn.prop('disabled', true).text('Saving...');
+        if (typeof start_load === 'function') {
+            start_load();
+        }
+
+        $.ajax({
+            url: 'save_assigned_database.php',
+            method: 'POST',
+            data: $assignForm.serialize(),
+            timeout: 45000,
+            success: function(resp){
+                const text = String(resp || '').trim();
+                if (text.indexOf('OK|') === 0) {
+                    const redirectUrl = text.substring(3) || ('index.php?page=assign_duties&id=<?php echo isset($projectId) ? (int)$projectId : 0; ?>');
+                    if (typeof alert_toast === 'function') {
+                        alert_toast('Assignment saved successfully.', 'success');
+                    }
+                    setTimeout(function(){
+                        window.location.href = redirectUrl;
+                    }, 700);
+                    return;
+                }
+
+                if (typeof end_load === 'function') {
+                    end_load();
+                }
+                $saveBtn.prop('disabled', false).text(defaultSaveText);
+                if (typeof alert_toast === 'function') {
+                    alert_toast(text || 'Unable to save assignment.', 'danger');
+                } else {
+                    alert(text || 'Unable to save assignment.');
+                }
+            },
+            error: function(xhr, status){
+                if (typeof end_load === 'function') {
+                    end_load();
+                }
+                $saveBtn.prop('disabled', false).text(defaultSaveText);
+
+                if (status === 'timeout') {
+                    if (typeof alert_toast === 'function') {
+                        alert_toast('Save timed out. Refreshing to verify status...', 'warning');
+                    }
+                    setTimeout(function(){
+                        window.location.href = 'index.php?page=assign_duties&id=<?php echo isset($projectId) ? (int)$projectId : 0; ?>';
+                    }, 900);
+                    return;
+                }
+
+                const err = String(xhr.responseText || xhr.status || 'Request failed');
+                if (typeof alert_toast === 'function') {
+                    alert_toast(err, 'danger');
+                } else {
+                    alert(err);
+                }
+            }
+        });
+    });
+});
+
+function resetAllocations(taskId, activityId) {
+    if (confirm("Are you sure you want to reset allocations?")) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "index.php?page=save_assign&task_id=" + taskId + "&activity_id=" + activityId, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+            }
+        };
+        xhr.send();
+    }
+}
+</script>

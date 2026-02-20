@@ -1,0 +1,24 @@
+.view_image img{
+    height: 150px;
+    width: 150px;
+}
+.view_image{
+    display: grid;
+    justify-content: center;
+    align-items: center;
+}
+
+.view_rows{
+    padding: 10px;
+    margin: 10px;
+    border-radius: 10px;
+    box-shadow: 10px 10px 10px rgb(226, 226, 226);
+    background-color: whitesmoke;
+}
+.col-sm-3{
+    width: 5% !important;
+}
+.view_table{
+    height: 50vh;
+    
+}

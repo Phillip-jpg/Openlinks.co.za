@@ -1,0 +1,10 @@
+[06-Mar-2023 19:50:13 UTC] PHP Warning:  require_once(../PHPMailer/PHPMailer/Exception.php): failed to open stream: No such file or directory in /home/yasccoza/public_html/openlinks.co.za/TIMS/classes/CRON.php on line 2
+[06-Mar-2023 19:50:13 UTC] PHP Fatal error:  require_once(): Failed opening required '../PHPMailer/PHPMailer/Exception.php' (include_path='.:/opt/cpanel/ea-php74/root/usr/share/pear') in /home/yasccoza/public_html/openlinks.co.za/TIMS/classes/CRON.php on line 2
+[06-Mar-2023 19:52:31 UTC] PHP Warning:  include_once(/../helpers/token.php): failed to open stream: No such file or directory in /home/yasccoza/public_html/openlinks.co.za/TIMS/classes/mail_body.class.php on line 2
+[06-Mar-2023 19:52:31 UTC] PHP Warning:  include_once(): Failed opening '/../helpers/token.php' for inclusion (include_path='.:/opt/cpanel/ea-php74/root/usr/share/pear') in /home/yasccoza/public_html/openlinks.co.za/TIMS/classes/mail_body.class.php on line 2
+[19-Mar-2023 11:02:22 UTC] PHP Warning:  include_once(/../classes/CRON.php): failed to open stream: No such file or directory in /home/yasccoza/public_html/openlinks.co.za/TIMS/classes/cronjobs.php on line 3
+[19-Mar-2023 11:02:22 UTC] PHP Warning:  include_once(): Failed opening '/../classes/CRON.php' for inclusion (include_path='.:/opt/cpanel/ea-php74/root/usr/share/pear') in /home/yasccoza/public_html/openlinks.co.za/TIMS/classes/cronjobs.php on line 3
+[19-Mar-2023 11:02:22 UTC] PHP Fatal error:  Uncaught Error: Class 'CRON' not found in /home/yasccoza/public_html/openlinks.co.za/TIMS/classes/cronjobs.php:4
+Stack trace:
+#0 {main}
+  thrown in /home/yasccoza/public_html/openlinks.co.za/TIMS/classes/cronjobs.php on line 4
