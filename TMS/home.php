@@ -117,7 +117,10 @@ $login_id = $_SESSION['login_id'];
                                     echo "<span class='badge badge-success'>{$row['status']}</span>";
                                 }
                                 echo "</td>";
-                                echo "<td><a class='btn btn-primary btn-sm' href='./index.php?page=view_job&id=" . $row['id'] . "'><i class='fas fa-folder'></i> View</a></td>";
+                                $jobPayload = (string) ((int) $row['id']);
+                                $jobHash = hash_hmac('sha256', $jobPayload, 'my_app_secret_key');
+                                $jobToken = base64_encode($jobPayload . '|' . $jobHash);
+                                echo "<td><a class='btn btn-primary btn-sm' href='./index.php?page=view_job&job=" . urlencode($jobToken) . "'><i class='fas fa-folder'></i> View</a></td>";
                                 echo "</tr>";
                                 $count++;
                             }

@@ -153,7 +153,7 @@ $qry2 = $conn->query("SELECT SUM(resources) FROM user_productivity WHERE task_id
 			<div class="card card-outline card-primary">
 				<div class="card-header">
 					<span><b>Activities List for: <?php echo ucwords($task_name) ?></b></span>
-					<?php if ($_SESSION['login_type'] == 1 || $_SESSION['login_type'] == 2): ?>
+					<?php if ($_SESSION['login_type'] == 2): ?>
                         <div class="card-tools">
                             <a href="javascript:void(0)"
                                class="btn-add-activity dropdown-item new_productivity"

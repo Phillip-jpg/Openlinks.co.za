@@ -207,6 +207,7 @@ ORDER BY name ASC;
 							<th style="width: 5%;">Type</th>
 							<th style="width: 5%;">Work Types</th>
 							<th style="width: 5%;">Industries</th>
+							<th style="width: 5%;">Orbited</th>
 							
 							<th style="width: 5%;">Action</th>
 						</tr>
@@ -255,6 +256,8 @@ ORDER BY name ASC;
 										Industry: <?= e((string)($row['titles'] ?? '')) ?><br>
 										Office: <b class="text-primary"><?= e((string)($row['offices'] ?? '')) ?></b>
 									</td>
+
+									<td><?= e(trim((string)($row['orbiter_id'] ?? 0)) !== '0' ? 'Yes' : 'No') ?></td>
 									
 									<td class="text-center">
 										<button
@@ -269,13 +272,13 @@ ORDER BY name ASC;
 										<div class="dropdown-menu">
 											<a class="dropdown-item view_user" href="javascript:void(0)" data-id="<?= e((string)$userId) ?>">View</a>
 
-											<?php if ($loginType === 1 ||$loginType === 2): ?>
+											<?php if ($loginType === 2): ?>
 												<div class="dropdown-divider"></div>
-
+												<?php if ($row['orbiter_id'] == 0): ?>
 												<a class="dropdown-item" href="./index.php?page=edit_user&id=<?= e(urlencode($encoded)) ?>">
 													Edit
 												</a>
-
+												<?php endif; ?>
 												<div class="dropdown-divider"></div>
 
 												<!-- <a class="dropdown-item delete_user" href="javascript:void(0)" data-id="<?= e((string)$userId) ?>">Delete</a> -->
@@ -302,18 +305,19 @@ ORDER BY name ASC;
 	.dropdown-item:hover { background-color: #f1f1f1; }
 </style>
 
-<script>
-	$(document).ready(function () {
-		var table = $('#list').DataTable();
+	<script>
+		$(document).ready(function () {
+			var table = $('#list').DataTable();
+			var ENTITY_COLUMN_INDEX = 3; // Member ID=0, Name=1, Date=2, Entity=3
 
-		// Build entity filter values from Entity column (column index 2).
-		var entities = {};
-		table.column(2).data().each(function (value) {
-			var text = $('<div>').html(value).text().trim();
-			if (text !== '') {
-				entities[text] = true;
-			}
-		});
+			// Build entity filter values from the Entity column.
+			var entities = {};
+			table.column(ENTITY_COLUMN_INDEX).data().each(function (value) {
+				var text = $('<div>').html(value).text().trim();
+				if (text !== '') {
+					entities[text] = true;
+				}
+			});
 
 		Object.keys(entities).sort().forEach(function (entityName) {
 			$('#entity-filter').append(
@@ -321,14 +325,14 @@ ORDER BY name ASC;
 			);
 		});
 
-		$('#entity-filter').on('change', function () {
-			var selected = $(this).val();
-			if (selected) {
-				table.column(2).search('^' + $.fn.dataTable.util.escapeRegex(selected) + '$', true, false).draw();
-			} else {
-				table.column(2).search('').draw();
-			}
-		});
+			$('#entity-filter').on('change', function () {
+				var selected = $(this).val();
+				if (selected) {
+					table.column(ENTITY_COLUMN_INDEX).search('^' + $.fn.dataTable.util.escapeRegex(selected) + '$', true, false).draw();
+				} else {
+					table.column(ENTITY_COLUMN_INDEX).search('').draw();
+				}
+			});
 
 		$(document).on('click', '.view_user', function () {
 			const id = $(this).attr('data-id');

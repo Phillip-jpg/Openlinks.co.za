@@ -140,6 +140,37 @@ try {
         }
     }
 
+    // Notifications for orbit assignment
+    $pmNotifStmt = $conn->prepare("
+        INSERT INTO pm_notifications (PM_ID, Member_ID, Notification_Type)
+        VALUES (?, ?, 222)
+    ");
+    if (!$pmNotifStmt) {
+        throw new RuntimeException("PM notification prepare failed: " . $conn->error);
+    }
+    $pmNotifStmt->bind_param("ii", $pm_id, $member_id);
+    if (!$pmNotifStmt->execute()) {
+        $err = $pmNotifStmt->error;
+        $pmNotifStmt->close();
+        throw new RuntimeException("PM notification insert failed: " . $err);
+    }
+    $pmNotifStmt->close();
+
+    $memberNotifStmt = $conn->prepare("
+        INSERT INTO member_notifications (PM_ID, Member_ID, Notification_Type)
+        VALUES (?, ?, 111)
+    ");
+    if (!$memberNotifStmt) {
+        throw new RuntimeException("Member notification prepare failed: " . $conn->error);
+    }
+    $memberNotifStmt->bind_param("ii", $pm_id, $member_id);
+    if (!$memberNotifStmt->execute()) {
+        $err = $memberNotifStmt->error;
+        $memberNotifStmt->close();
+        throw new RuntimeException("Member notification insert failed: " . $err);
+    }
+    $memberNotifStmt->close();
+
     $conn->commit();
 
     // ----------------------------
@@ -275,7 +306,7 @@ try {
                 
                 
                  <p>
-                  This orbiting means the member’s scope of work has been expanded to include responsibilities related to your entity.
+                  This orbiting means the member scope of work has been expanded to include responsibilities related to your entity.
                 </p>
         
                 <p>

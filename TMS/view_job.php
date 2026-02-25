@@ -8,9 +8,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 /* -----------------------------
    1) Read & decode safe job param
 ------------------------------ */
-if (!isset($_GET['job']) || $_GET['job'] === '') {
-    die("Invalid request");
-}
+if (isset($_GET['job']) && $_GET['job'] !== '') {
 
 $decoded = base64_decode($_GET['job'], true);
 if ($decoded === false) {
@@ -22,6 +20,11 @@ if (count($parts) !== 2 || !ctype_digit($parts[0])) {
     die("Invalid job reference");
 }
 
+$expectedHash = hash_hmac('sha256', $parts[0], 'my_app_secret_key');
+if (!hash_equals($expectedHash, $parts[1])) {
+    die("Invalid job reference");
+}
+
 $id = (int)$parts[0];
 
 /**
@@ -29,9 +32,16 @@ $id = (int)$parts[0];
  * Your existing SQL uses $_GET['id'] and {$id}
  * So we set them from the decoded value (without changing your SQL).
  */
-$id = (int)$decoded;         // used in {$id}
+$id = (int)$parts[0];        // used in {$id}
 $_GET['id'] = $id;           // used in "... ".$_GET['id']
 $projectId = $id;            // optional alias (not required)
+} elseif (isset($_GET['id']) && ctype_digit((string)$_GET['id'])) {
+    $id = (int)$_GET['id'];
+    $_GET['id'] = $id;
+    $projectId = $id;
+} else {
+    die("Invalid request");
+}
 
 $login_id  = isset($_SESSION['login_id']) ? (int)$_SESSION['login_id'] : 0;
 if ($login_id <= 0) {

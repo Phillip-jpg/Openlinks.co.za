@@ -7,6 +7,12 @@ $errorMessage = '';
 
 // IMPORTANT: treat team_id as STRING (prevents losing leading zeros like "0042")
 $team_id = ''; // define for the "Back" link even on error
+$isAjax = (
+    isset($_POST['ajax']) ||
+    (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+);
+$newMemberEmailQueue = [];
+$pmEmailPayload = null;
 
 // ------------------------------
 // EMAIL HELPERS
@@ -396,7 +402,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             }
 
                             // ✅ send email to the new member (after insert)
-                            sendNewMemberAddedEmail($conn, $team_id, $oneUserId, $manager_id, $team_name);
+                            $newMemberEmailQueue[] = [
+                                'team_id' => $team_id,
+                                'new_member_id' => $oneUserId,
+                                'manager_id' => $manager_id,
+                                'team_name' => $team_name
+                            ];
                         }
                     }
                 }
@@ -461,7 +472,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         // ✅ SEND PM EMAIL after DB operations (member inserts done)
         // This is the part you were missing in practice: team_id must match DB (string).
         if ($errorMessage === '' && !empty($addedMembersForPm)) {
-            sendPmMembersAddedEmail($conn, $manager_id, $team_name, $team_id, $addedMembersForPm);
+            $pmEmailPayload = [
+                'manager_id' => $manager_id,
+                'team_name' => $team_name,
+                'team_id' => $team_id,
+                'added_members' => $addedMembersForPm
+            ];
         }
 
         // ✅ If we reach here, consider it successful
@@ -474,6 +490,55 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 } else {
     $errorMessage = "Invalid request method.";
+}
+
+$responseMessage = $success ? 'Team details saved. Emails are sending in the background.' : $errorMessage;
+
+if ($isAjax) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => $success ? 1 : 0,
+        'message' => $responseMessage,
+        'team_id' => $team_id
+    ]);
+
+    // Return response first; continue email sending in background.
+    ignore_user_abort(true);
+    @set_time_limit(0);
+    if (function_exists('session_write_close')) {
+        @session_write_close();
+    }
+    if (function_exists('fastcgi_finish_request')) {
+        @fastcgi_finish_request();
+    } else {
+        @ob_flush();
+        @flush();
+    }
+
+    if ($success) {
+        foreach ($newMemberEmailQueue as $job) {
+            sendNewMemberAddedEmail(
+                $conn,
+                (string)$job['team_id'],
+                (int)$job['new_member_id'],
+                (int)$job['manager_id'],
+                (string)$job['team_name']
+            );
+        }
+
+        if (is_array($pmEmailPayload) && !empty($pmEmailPayload['added_members'])) {
+            sendPmMembersAddedEmail(
+                $conn,
+                (int)$pmEmailPayload['manager_id'],
+                (string)$pmEmailPayload['team_name'],
+                (string)$pmEmailPayload['team_id'],
+                (array)$pmEmailPayload['added_members']
+            );
+        }
+    }
+
+    $conn->close();
+    exit;
 }
 
 $conn->close();

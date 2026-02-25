@@ -12,7 +12,7 @@
 <div class="col-lg-12">
 	<div class="card card-outline card-success shadow-sm">
 		<div class="card-header bg-primary text-white">
-		<?php if($_SESSION['login_type'] == 3): ?>
+		<?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
 			
 			<?php else: ?>
 				<div class="card-tools">
@@ -26,18 +26,18 @@
 	
 	<table class="table table-hover table-bordered table-condensed" id="list">
 				<colgroup>
-					<col width="7%">
+					<col width="5%">
+					<col width="10%">
 					<col width="15%">
-					<col width="55%">
-					<col width="7%">
+					<col width="10%">
+					<col width="10%">
 				</colgroup>
 				<thead style="background-color:#032033 !important; color:white">
 					<tr>
 						<th>Job Type ID</th>
-					
 						<th>Job Type Name</th>
-						<th>Descrption</th>
-						
+						<th>Description</th>
+						<th>Date Created</th>
 						<th>Action</th>
 					</tr>
 				</thead>
@@ -50,7 +50,12 @@
 				        
 				    }elseif($_SESSION['login_type']==3){
 				        
-				        $qry = $conn->query("SELECT jt.* FROM job_type jt JOIN users u ON u.id = jt.creator_id WHERE jt.creator_id = (SELECT creator_id FROM users WHERE id = {$_SESSION['login_id']})");
+				        $qry = $conn->query("
+								SELECT jt.*
+								FROM job_type jt
+								JOIN users u ON u.id = {$_SESSION['login_id']}
+								WHERE jt.creator_id = u.creator_id
+								");
 				        
 				    }else{
 				        	$qry = $conn->query("SELECT * FROM job_type");
@@ -75,6 +80,11 @@
                         <p><b><?php echo html_entity_decode($row['description']) ?></b></p>
 			
 						</td>
+
+						<td>
+                        <p><b><?php echo html_entity_decode($row['date_created']) ?></b></p>
+			
+						</td>
 					
 					
 						
@@ -83,7 +93,7 @@
 		                      Action
 		                    </button>
 		                    <div class="dropdown-menu" >
-		                      <?php if($_SESSION['login_type'] == 3 ||$_SESSION['login_type']==4): ?>
+		                      <?php if($_SESSION['login_type'] == 3 ||$_SESSION['login_type']==4 ||$_SESSION['login_type']==1): ?>
                                         
 								<?php else: ?>
 								
@@ -94,7 +104,7 @@
                                     $encoded = base64_encode($payload . ':' . $hash);
                                     ?>
 		                      <a class="dropdown-item" href="./index.php?page=edit_job_type&id=<?php echo urlencode($encoded); ?>">Edit</a>
-							  <a class="dropdown-item delete_job_type" href="javascript:void(0)" data-id="<?php echo $row['id'] ?>">Delete</a>
+							  <!-- <a class="dropdown-item delete_job_type" href="javascript:void(0)" data-id="<?php echo $row['id'] ?>">Delete</a> -->
 
 		                      
 		                      

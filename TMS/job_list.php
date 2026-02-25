@@ -160,9 +160,9 @@ if (empty($_SESSION['csrf_token'])) {
                   : $row['name'];
 
                 // ✅ encode id for View URL
-                $jobRef = urlencode(
-                        base64_encode($row['id'] . '|' . bin2hex(random_bytes(6)))
-                    );
+                $jobPayload = (string)((int)$row['id']);
+                $jobHash = hash_hmac('sha256', $jobPayload, 'my_app_secret_key');
+                $jobRef = urlencode(base64_encode($jobPayload . '|' . $jobHash));
             ?>
               <tr>
                 <th class="text-center" style="color:#007bff"><?php echo (int)$row['id']; ?></th>

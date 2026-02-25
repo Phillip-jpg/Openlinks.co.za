@@ -6,13 +6,13 @@
 	    header('location:login.php');
     include 'db_connect.php';
     ob_start();
-  if(!isset($_SESSION['system'])){
+  // if(!isset($_SESSION['system'])){
 
-    $system = $conn->query("SELECT * FROM system_settings")->fetch_array();
-    foreach($system as $k => $v){
-      $_SESSION['system'][$k] = $v;
-    }
-  }
+  //   $system = $conn->query("SELECT * FROM system_settings")->fetch_array();
+  //   foreach($system as $k => $v){
+  //     $_SESSION['system'][$k] = $v;
+  //   }
+  // }
   ob_end_flush();
 
 	include 'header.php' 
@@ -125,7 +125,8 @@
     <strong>Copyright &copy; 2025 <a href="https://www.openlinks.co.za/">openlinks.co.za</a>.</strong>
     All rights reserved.
     <div class="float-right d-none d-sm-inline-block">
-      <b><?php echo $_SESSION['system']['name'] ?></b>
+    
+
     </div>
   </footer>
 </div>

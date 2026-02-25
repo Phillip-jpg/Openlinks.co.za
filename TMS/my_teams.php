@@ -46,165 +46,6 @@ if (!isset($conn)) {
 }
 </style>
 
-<a href="./index.php?page=schedule_teams_lvl3" class="work-schedule-btn">
-   <span class="icon">📅</span>
-   <span class="text">Work Resource Schedule</span>
-   <span class="arrow">→</span>
-</a>
-
-<br><br>
-
-<div class="card card-outline card-primary">
-    <div class="card-body">
-        <p>Create New Team</p>
-        <p style="color:red; font-size:17px">
-            Please Note :You Only Create new Teams in this Section Scroll to the Bottom Table and select Action if you want to Make Edits (eg. Adding a Member to an existing Team)
-        </p>
-
-        <!-- Form for Managing Team Schedule -->
-        <form id="manage-schedule" action="./index.php?page=save_schedule" method="POST" novalidate>
-            <div class="row">
-                <!-- Team Name -->
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="control-label">Team Name</label>
-                        <input
-                            type="text"
-                            class="form-control form-control-sm"
-                            name="team_name"
-                            value=""
-                            required
-                        >
-                    </div>
-                </div>
-
-                <!-- Team Members Onboarding -->
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="control-label">Team Members Onboarding</label>
-                        <select
-                            class="form-control form-control-sm select2"
-                            multiple="multiple"
-                            name="user_ids[]"
-                            id="user_ids"
-                            required
-                        >
-                            <?php
-                            if ($_SESSION['login_type'] == 2) {
-                                $employees = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 3 AND creator_id = {$_SESSION['login_id']} OR id={$_SESSION['login_id']}  ORDER BY name ASC;");
-                            } else {
-                                $employees = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 3 OR type =2 ORDER BY name ASC");
-                            }
-
-                            while ($row = $employees->fetch_assoc()):
-                                $isDefaultEntityMember = ((int)$_SESSION['login_type'] === 2 && (int)$row['id'] === (int)$_SESSION['login_id']);
-                            ?>
-                                <option value="<?php echo $row['id']; ?>" <?php echo $isDefaultEntityMember ? 'selected' : ''; ?>>
-                                    <?php echo ucwords($row['name']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <!-- Work Types -->
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="control-label">Add Work Type(s)</label>
-                        <select
-                            class="form-control form-control-sm select2"
-                            multiple="multiple"
-                            name="worktype_ids[]"
-                            id="worktype_ids"
-                            required
-                        >
-                            <?php
-                            if ($_SESSION['login_type'] == 2) {
-                                $worktypes = $conn->query("SELECT DISTINCT tl.*
-                                    FROM task_list tl
-                                    WHERE tl.creator_id = {$_SESSION['login_id']}");
-                            } else {
-                                $worktypes = $conn->query("SELECT * FROM task_list ORDER BY task_name ASC");
-                            }
-
-                            while ($row = $worktypes->fetch_assoc()):
-                            ?>
-                                <option value="<?php echo $row['id']; ?>">
-                                    <?php echo ucwords($row['task_name']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <!-- Admin in Charge -->
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="control-label">Admin in Charge of Team</label>
-                        <select class="form-control form-control-sm select2" name="manager_id" required>
-                            <option value=""></option>
-                            <?php
-                            if ($_SESSION['login_type'] == 2) {
-                                $managers = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 2 AND id={$_SESSION['login_id']}");
-                            } else {
-                                $managers = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 2 ORDER BY name ASC");
-                            }
-
-                            while ($row = $managers->fetch_assoc()):
-                                $isSelectedManager = ((int)$_SESSION['login_type'] === 2 && (int)$row['id'] === (int)$_SESSION['login_id']);
-                            ?>
-                                <option value="<?php echo $row['id']; ?>" <?php echo $isSelectedManager ? 'selected' : ''; ?>>
-                                    <?php echo ucwords($row['name']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Operational Leader -->
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label class="control-label">Operational Leader</label>
-                        <select class="form-control form-control-sm select2" required name="op_ids">
-                            <option value=""></option>
-                            <?php
-                            if ($_SESSION['login_type'] == 2) {
-                                $employees = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 3 AND creator_id = {$_SESSION['login_id']} OR id={$_SESSION['login_id']}  ORDER BY name ASC;");
-                            } else {
-                                $employees = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 3 OR type =2 ORDER BY name ASC");
-                            }
-
-                            while ($row = $employees->fetch_assoc()):
-                            ?>
-                                <option value="<?php echo $row['id']; ?>">
-                                    <?php echo ucwords($row['name']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card-footer border-top border-info">
-                <div class="d-flex w-100 justify-content-center align-items-center">
-                    <button id="btn-save" class="btn btn-flat bg-gradient-primary mx-2" type="submit">
-                        Save
-                    </button>
-
-                    <button class="btn btn-flat bg-gradient-secondary mx-2" type="button"
-                            onclick="location.href='index.php?page=schedule_teams_lvl2'">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
 <div class="col-lg-12">
     <div class="card card-outline card-success shadow-sm">
         <div class="card-header bg-primary text-white">
@@ -218,8 +59,6 @@ if (!isset($conn)) {
                     <col width="5%">
                     <col width="5%">
                     <col width="5%">
-                    <col width="5%">
-                    <col width="5%">
                 </colgroup>
                 <thead style="background-color:#032033 !important; color:white">
                     <tr>
@@ -227,14 +66,12 @@ if (!isset($conn)) {
                         <th>Name of Team</th>
                         <th>Date Created</th>
                         <th>PM</th>
-                        <th>Number of Members</th>
-                        <th>Number of Worktypes</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php
-                    if ($_SESSION['login_type'] !== 1) {
+                    if ($_SESSION['login_type'] == 3) {
                         $work_qry = $conn->query("
                             SELECT
                                 ts.*,
@@ -242,24 +79,13 @@ if (!isset($conn)) {
                                 COUNT(DISTINCT ts.worktype_ids) AS work_type_count,
                                 CONCAT(u.firstname, ' ', u.lastname) AS PM
                             FROM team_schedule ts
-                            JOIN users u ON u.id = ts.pm_manager
-                            WHERE ts.pm_manager = {$_SESSION['login_id']}
+                            LEFT JOIN users u ON u.id = ts.pm_manager
+                            WHERE ts.team_members = {$_SESSION['login_id']}
                             GROUP BY ts.team_id;
                         ");
                     }
 
-                    if ($_SESSION['login_type'] == 1) {
-                        $work_qry = $conn->query("
-                            SELECT
-                                ts.*,
-                                COUNT(DISTINCT ts.team_members) AS member_count,
-                                COUNT(DISTINCT ts.worktype_ids) AS work_type_count,
-                                CONCAT(u.firstname, ' ', u.lastname) AS PM
-                            FROM team_schedule ts
-                            JOIN users u ON u.id = ts.pm_manager
-                            GROUP BY ts.team_id;
-                        ");
-                    }
+                  
 
                     while ($row = $work_qry->fetch_assoc()):
                     ?>
@@ -268,8 +94,6 @@ if (!isset($conn)) {
                             <td><p><?php echo ucwords($row['team_name']) ?></p></td>
                             <td><p><?php echo ucwords($row['Date_created']) ?></p></td>
                             <td><p><?php echo ucwords($row['PM']) ?></p></td>
-                            <td><p><?php echo ucwords($row['member_count']) ?></p></td>
-                            <td><p><?php echo ucwords($row['work_type_count']) ?></p></td>
                             <td class="text-center">
                                 <button type="button"
                                         class="btn btn-default btn-sm btn-flat border-info wave-effect text-info dropdown-toggle"

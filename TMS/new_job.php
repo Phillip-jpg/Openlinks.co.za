@@ -453,7 +453,7 @@ if (isset($id) && !empty($id)) {
 	              <label for="" class="control-label">Job Type</label>
 
 	              <select class="form-control form-control-sm select2" name="JOB_TYPE" required>
-	                <option value="0"><?php echo $has_selected_pm ? 'Select job type' : 'Select PM first'; ?></option>
+	                <!-- <option value="0"><?php echo $has_selected_pm ? 'Select job type' : 'Select PM first'; ?></option> -->
 	                <?php 
 	                $login_id   = (int) $_SESSION['login_id'];
 	                $login_type = (int) $_SESSION['login_type'];
@@ -515,7 +515,7 @@ if (isset($id) && !empty($id)) {
 	                      INNER JOIN members_and_worktypes mw
 	                        ON mw.work_type_id = tl.id
 	                      WHERE mw.member_id = $login_id
-	                        AND tl.creator_id = (SELECT creator_id FROM users WHERE id = $login_id)
+	                        AND tl.creator_id = $pmId
 	                      ORDER BY tl.task_name;
 	                    ";
 	                  } else {

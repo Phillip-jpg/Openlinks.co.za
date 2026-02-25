@@ -370,6 +370,80 @@ function safeSendAssignedWeeksEmails(mysqli $conn, int $teamId, array $insertedR
     }
 }
 
+/**
+ * Insert schedule notifications after successful assignment.
+ * member_notifications.Notification_Type = 34
+ * pm_notifications.Notification_Type = 35
+ */
+function insertScheduleNotifications(mysqli $conn, int $teamId): void
+{
+    if ($teamId <= 0) return;
+
+    $fetchStmt = $conn->prepare("
+        SELECT DISTINCT pm_manager, team_members
+        FROM team_schedule
+        WHERE team_id = ?
+    ");
+    if (!$fetchStmt) {
+        throw new RuntimeException("Prepare failed (fetch notifications source): {$conn->error}");
+    }
+
+    $fetchStmt->bind_param("i", $teamId);
+    $fetchStmt->execute();
+    $fetchStmt->bind_result($rowPmId, $rowMemberId);
+
+    $pmId = 0;
+    $memberIds = [];
+
+    while ($fetchStmt->fetch()) {
+        if ($pmId <= 0 && (int)$rowPmId > 0) {
+            $pmId = (int)$rowPmId;
+        }
+        $memberId = (int)$rowMemberId;
+        if ($memberId > 0) {
+            $memberIds[$memberId] = true;
+        }
+    }
+    $fetchStmt->close();
+
+    if ($pmId > 0) {
+        $pmStmt = $conn->prepare("
+            INSERT INTO pm_notifications (PM_ID, team_id, Notification_Type)
+            VALUES (?, ?, 35)
+        ");
+        if (!$pmStmt) {
+            throw new RuntimeException("Prepare failed (pm notification): {$conn->error}");
+        }
+        $pmStmt->bind_param("ii", $pmId, $teamId);
+        if (!$pmStmt->execute()) {
+            $err = $pmStmt->error;
+            $pmStmt->close();
+            throw new RuntimeException("Insert failed (pm notification): {$err}");
+        }
+        $pmStmt->close();
+    }
+
+    if ($pmId > 0 && !empty($memberIds)) {
+        $memberStmt = $conn->prepare("
+            INSERT INTO member_notifications (PM_ID, Member_ID, Team_id, Notification_Type)
+            VALUES (?, ?, ?, 34)
+        ");
+        if (!$memberStmt) {
+            throw new RuntimeException("Prepare failed (member notification): {$conn->error}");
+        }
+
+        foreach (array_keys($memberIds) as $memberId) {
+            $memberStmt->bind_param("iii", $pmId, $memberId, $teamId);
+            if (!$memberStmt->execute()) {
+                $err = $memberStmt->error;
+                $memberStmt->close();
+                throw new RuntimeException("Insert failed (member notification): {$err}");
+            }
+        }
+        $memberStmt->close();
+    }
+}
+
 // ------------------------------
 // MAIN
 // ------------------------------
@@ -437,6 +511,10 @@ try {
         }
 
         $insertedRanges[] = ['start' => $startweek, 'end' => $endweek];
+    }
+
+    if (!empty($insertedRanges)) {
+        insertScheduleNotifications($conn, $teamId);
     }
 
     $conn->commit();

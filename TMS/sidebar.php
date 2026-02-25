@@ -173,6 +173,16 @@
               </a>
           </li>
           <?php endif; ?>
+
+
+           <?php if ($_SESSION['login_type'] == 3): ?>
+          <li class="nav-item">
+            <a href="./index.php?page=my_teams" class="nav-link nav-my_teams">
+                  <i class="fas fa-users nav-icon"></i>
+                  <p>My Teams</p>
+              </a>
+          </li>
+          <?php endif; ?>
           
      <?php if ($_SESSION['login_type'] == 3 ): ?>
           <li class="nav-item">

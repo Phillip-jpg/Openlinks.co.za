@@ -31,7 +31,7 @@ WHERE
 <div class="col-lg-12">
     <div class="card-body">
                 <!-- Form for Adding Team Members -->
-                <form action="./index.php?page=add_team_member" method="POST">
+                <form action="add_team_member.php" method="POST" id="manage_team_member">
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -77,6 +77,7 @@ WHERE
                             <input type="hidden" name="manager_id" value="<?php echo htmlspecialchars($row1['pm_manager'] ?? ''); ?>">
                              <input type="hidden" name="op_ids" value="<?php echo htmlspecialchars($row1['op_ids'] ?? ''); ?>">
                                 <!-- Add Team Members Dropdown -->
+                           
                                 <label for="user_ids" class="control-label">Add Team Member</label>
                                 <select class="form-control form-control-sm select2" name="user_ids" id="user_ids">
                                     <option value="0"></option>
@@ -84,7 +85,7 @@ WHERE
                                  if($_SESSION['login_type'] == 2 ){
                 					    	$employees = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 3 AND creator_id = {$_SESSION['login_id']} OR id={$_SESSION['login_id']}  ORDER BY name ASC;");
                 					}else{
-                					      $employees = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 3 OR type =2 ORDER BY name ASC");
+                					      $employees = $conn->query("SELECT * FROM users WHERE type = 200");
                 					}
                                 
                                 while ($row = $employees->fetch_assoc()):
@@ -110,7 +111,7 @@ WHERE
                                                                         mw.member_id = {$_SESSION['login_id']}
                                                                         OR tl.creator_id = {$_SESSION['login_id']}");
                 					}else{
-                					      $worktypes = $conn->query("SELECT * FROM task_list ORDER BY task_name ASC");
+                					      $worktypes = $conn->query("SELECT * FROM task_list where id=0 ORDER BY task_name ASC");
                 					}
                                 
                                 while ($row = $worktypes->fetch_assoc()):
@@ -134,7 +135,7 @@ WHERE
                                          if($_SESSION['login_type'] == 2 ){
                         					    	$employees = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 3 AND creator_id = {$_SESSION['login_id']} OR id={$_SESSION['login_id']}  ORDER BY name ASC;");
                         					}else{
-                        					      $employees = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 3 OR type =2 ORDER BY name ASC");
+                        					      $employees = $conn->query("SELECT *, CONCAT(firstname, ' ', lastname) AS name FROM users WHERE type = 500");
                         					}
                                         
                                         while ($row = $employees->fetch_assoc()):
@@ -147,31 +148,47 @@ WHERE
                             </div>
                         </div>
                     </div>
+                     <?php if (isset($_SESSION['login_type']) && $_SESSION['login_type'] == 2): ?>
                     <div class="card-footer border-top border-info">
                         <div class="d-flex justify-content-center">
                             <button class="btn btn-flat bg-gradient-primary mx-2" type="submit">Save</button>
                             <button class="btn btn-flat bg-gradient-secondary mx-2" type="button" onclick="location.href='index.php?page=schedule_teams_lvl2'">Back</button>
                         </div>
                     </div>
+                       <?php endif; ?>
+                       
+                    <?php if (isset($_SESSION['login_type']) && $_SESSION['login_type'] == 3): ?>
+                    <div class="card-footer border-top border-info">
+                        <div class="d-flex justify-content-center">
+                           
+                            <button class="btn btn-flat bg-gradient-secondary mx-2" type="button" onclick="location.href='index.php?page=my_teams'">Back</button>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                 </form>
             </div>
-    <div class="card card-outline card-success shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <h4 class="card-title">Team: (<?php echo $row1['team_name'] ?>)  <br> <hr>  PM: (<?php echo $row1['pm'] ?>)   <br> <hr>  Operational Leader: (<?php echo $row1['operations'] ?>)  <br> 
-            <hr>  Worktypes: (
-    <?php 
-    $works = $conn->query("SELECT 
-        GROUP_CONCAT(DISTINCT tl.task_name SEPARATOR ', ') AS Worktypes
-        FROM team_schedule ts
-        LEFT JOIN task_list tl ON tl.id = ts.worktype_ids
-        WHERE ts.team_id = $team_id");
+         
+           
+                <div class="card card-outline card-success shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="card-title">Team: (<?php echo $row1['team_name'] ?>)  <br> <hr>  PM: (<?php echo $row1['pm'] ?>)   <br> <hr>  Operational Leader: (<?php echo $row1['operations'] ?>)  <br> 
+                        <hr>  Worktypes: (
+                <?php 
+                $works = $conn->query("SELECT 
+                    GROUP_CONCAT(DISTINCT tl.task_name SEPARATOR ', ') AS Worktypes
+                    FROM team_schedule ts
+                    LEFT JOIN task_list tl ON tl.id = ts.worktype_ids
+                    WHERE ts.team_id = $team_id");
 
-    while ($row = $works->fetch_assoc()):
-        echo $row['Worktypes'];
-    endwhile;
-    ?>
-)  </h4>
-        </div>
+                while ($row = $works->fetch_assoc()):
+                    echo $row['Worktypes'];
+                endwhile;
+                ?>
+            )  </h4>
+            </div>
+
+
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover table-bordered table-condensed" id="list">
@@ -212,6 +229,7 @@ WHERE
                                         <button type="button" class="btn btn-default btn-sm btn-flat border-info wave-effect text-info dropdown-toggle" data-toggle="dropdown" aria-expanded="true">
                                             Action
                                         </button>
+                                     <?php if (isset($_SESSION['login_type']) && $_SESSION['login_type'] == 2): ?>
                                         <div class="dropdown-menu">
                                             <?php if ($row['status'] == 0): ?>
                                                 <a class="dropdown-item" href="./index.php?page=active_member&id=<?php echo $row['member_id']; ?>&status=0&team_id=<?php echo $row['team_id']; ?>">Activate</a>
@@ -219,6 +237,7 @@ WHERE
                                                 <a class="dropdown-item" href="./index.php?page=active_member&id=<?php echo $row['member_id']; ?>&status=1&team_id=<?php echo $row['team_id']; ?>">Deactivate</a>
                                             <?php endif; ?>
                                         </div>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
  <?php endwhile; ?>
@@ -249,10 +268,41 @@ WHERE
 <script>
 	$(document).ready(function(){
 		$('#list').dataTable()
-	
-	$('.delete_task').click(function(){
-	_conf("Are you sure to delete this work type?","delete_task",[$(this).attr('data-id')])
-	})
+
+		$('#manage_team_member').submit(function(e){
+			e.preventDefault()
+			var $form = $(this)
+			var $submitBtn = $form.find('button[type="submit"]').first()
+			$submitBtn.prop('disabled', true).text('Saving...')
+			start_load()
+			$.ajax({
+				url: $form.attr('action'),
+				method: 'POST',
+				data: $form.serialize() + '&ajax=1',
+				dataType: 'json',
+				success:function(resp){
+					if(resp && (resp.success == 1 || resp.success === true)){
+						alert_toast(resp.message || 'Team details were saved successfully.','success')
+						setTimeout(function(){
+							location.reload()
+						},700)
+					}else{
+						alert_toast((resp && resp.message) ? resp.message : 'Failed to save team details.','danger')
+						$submitBtn.prop('disabled', false).text('Save')
+						end_load()
+					}
+				},
+				error:function(){
+					alert_toast('An error occurred while saving team details.','danger')
+					$submitBtn.prop('disabled', false).text('Save')
+					end_load()
+				}
+			})
+		})
+		
+		$('.delete_task').click(function(){
+		_conf("Are you sure to delete this work type?","delete_task",[$(this).attr('data-id')])
+		})
 
 	$('.new_productivity').click(function(){
 		uni_modal("<i class='fa fa-plus'></i> New Progress for: "+$(this).attr('data-task'),"manage_progress.php?tid="+$(this).attr('data-tid'),'large')

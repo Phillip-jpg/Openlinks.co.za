@@ -182,7 +182,60 @@ switch ($action) {
         exit;
 
     case 'save_project':
-        echo $crud->save_project();
+        $save = $crud->save_project();
+        echo $save;
+
+        if ((string)$save === '1') {
+            $jobs = $crud->dequeueDeferredEmailJobs();
+            if (!empty($jobs)) {
+                $queueFile = rtrim((string)sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+                    . DIRECTORY_SEPARATOR
+                    . 'openlinks_email_queue_' . uniqid('', true) . '.json';
+
+                if (@file_put_contents($queueFile, json_encode($jobs), LOCK_EX) !== false) {
+                    $worker = __DIR__ . DIRECTORY_SEPARATOR . 'send_deferred_emails.php';
+                    $phpBin = PHP_BINARY ?: 'php';
+                    $spawned = false;
+
+                    // Under Apache/PHP-FPM, PHP_BINARY may be php-cgi; use php.exe for CLI worker.
+                    if (stripos(PHP_OS_FAMILY, 'Windows') === 0) {
+                        $base = strtolower(basename($phpBin));
+                        if ($base === 'php-cgi.exe' || $base === 'php-cgi') {
+                            $phpExe = dirname($phpBin) . DIRECTORY_SEPARATOR . 'php.exe';
+                            if (is_file($phpExe)) {
+                                $phpBin = $phpExe;
+                            }
+                        }
+                    }
+
+                    if (stripos(PHP_OS_FAMILY, 'Windows') === 0) {
+                        $cmd = 'cmd /c start "" /B "' . $phpBin . '" "' . $worker . '" "' . $queueFile . '"';
+                        $handle = @popen($cmd, 'r');
+                        if (is_resource($handle)) {
+                            @pclose($handle);
+                            $spawned = true;
+                        } elseif (function_exists('exec')) {
+                            @exec($cmd);
+                            $spawned = true;
+                        }
+                    } else {
+                        @exec(
+                            escapeshellarg($phpBin) . ' '
+                            . escapeshellarg($worker) . ' '
+                            . escapeshellarg($queueFile)
+                            . ' > /dev/null 2>&1 &'
+                        );
+                        $spawned = true;
+                    }
+
+                    // Fallback: send now if background spawn failed.
+                    if (!$spawned) {
+                        $crud->runEmailJobsNow($jobs);
+                        @unlink($queueFile);
+                    }
+                }
+            }
+        }
         exit;
 
     case 'save_task_new':

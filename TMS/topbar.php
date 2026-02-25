@@ -80,7 +80,7 @@ if ($login_id > 0) {
 
         <li class="nav-item d-none d-md-block">
             <a class="nav-link" href="./">
-                <b style="color:white;"><?php echo $_SESSION['system']['name']; ?></b>
+                <!-- <b style="color:white;"><?php echo $_SESSION['system']['name']; ?></b> -->
             </a>
         </li>
 
@@ -168,7 +168,7 @@ if ($login_id > 0) {
                                         $notifText = "You <b>{$row['member']}</b> requested DONE<br>
                                             Job ID: <b>{$row['Job_ID']}</b><br>
                                             Job Name: <b>{$row['Job_Name']}</b><br>
-                                            Project Manager: <b>{$row['Manager']}</b><br>
+                                            Entity: <b>{$row['Manager']}</b><br>
                                             Team Assigned: {$row['team_name']}<br>
                                             Activity: {$row['activity_name']}<br>
                                             Client: {$row['company_name']}";
@@ -205,8 +205,9 @@ if ($login_id > 0) {
                                         $notifText = "A Job has been CREATED<br>
                                             Job ID: <b>{$row['Job_ID']}</b><br>
                                             Job Name: <b>{$row['Job_Name']}</b><br>
-                                            Project Manager: <b>{$row['Manager']}</b><br>
-                                            Client: <b>{$row['company_name']}</b>";
+                                            Entity: <b>{$row['Manager']}</b><br>
+                                            Client: <b>{$row['company_name']}</b>
+                                            Team: <b>{$row['team_name']}</b>";
                                         $notifLink = "index.php?page=Productivity_Pipeline";
                                     }
                                     if ($login_type == 3) {
@@ -214,7 +215,7 @@ if ($login_id > 0) {
                                             Activity: <b>{$row['activity_name']}</b><br>
                                             Job ID: <b>{$row['Job_ID']}</b><br>
                                             Job Name: <b>{$row['Job_Name']}</b><br>
-                                            Project Manager: <b>{$row['Manager']}</b><br>
+                                            Entity: <b>{$row['Manager']}</b><br>
                                             Client: {$row['company_name']}";
                                         $notifLink = "index.php?page=my_progress";
                                     }
@@ -241,15 +242,25 @@ if ($login_id > 0) {
                                     }
                                 }
 
-                                // TYPE 7
-                                if ($row['Notification_Type'] == 7) {
-                                    if ($login_type == 2) {
-                                        $notifText = "<b> Hi <b>{$row['Manager_Created']}</b></b> this notification is to inform you that a resource has been successfully CREATED and assigned to support your entity.<br>
-                                            Member: <b>{$row['member']}</b><br>
-                                            Role: <b>{$row['Role']}</b><br>";
-                                        $notifLink = "index.php?page=user_list";
-                                    }
-                                }
+	                                // TYPE 7
+	                                if ($row['Notification_Type'] == 7) {
+	                                    if ($login_type == 2) {
+	                                        $notifText = " Hi <b>{$row['member']} </b> welcome to <b>Openlinks </b> this notifications confirms that your entity account: <b>{$row['Manager_Created']}</b> has been successfully CREATED on our system. <br>";
+
+	                                    }
+	                                }
+
+	                                    if ($row['Notification_Type'] == 50) {
+		                                    if ($login_type == 2) {
+		                                        $managerCreated = !empty($row['Manager_Created']) ? $row['Manager_Created'] : 'Project Manager';
+		                                        $memberName = !empty($row['member']) ? $row['member'] : 'A new member';
+		                                        $memberRole = !empty($row['Role']) ? $row['Role'] : 'Member';
+		                                        $notifText = "Hi <b>{$managerCreated}</b>, a new member has been created for your entity.<br>
+		                                            Member: <b>{$memberName}</b><br>
+		                                            Role: <b>{$memberRole}</b><br>";
+		                                        $notifLink = "index.php?page=user_list";
+		                                    }
+		                                }
 
                                 // TYPE 8
                                 if ($row['Notification_Type'] == 8) {
@@ -273,18 +284,56 @@ if ($login_id > 0) {
                                 // TYPE 10
                                 if ($row['Notification_Type'] == 10) {
                                     if ($login_type == 3) {
-                                        $notifText = " Hi <b>{$row['member']} </b> this notification is to inform you that have been Addeed to {$row['team_name']} and assigned to support your entity <br>
+                                        $notifText = " Hi <b>{$row['member']} </b> this notification is to inform you that have been Added to <b>{$row['team_name']}</b> and assigned to support your entity <br>
                                             {$row['Manager_Created']} <br/>";
                                     }
                                 }
 
-                                // TYPE 11
-                                if ($row['Notification_Type'] == 11) {
-                                    if ($login_type == 2) {
-                                        $notifText = " Hi <b>{$row['Manager_Created']} </b> this notification is to inform you that a resource has been successfully Added to <b>{$row['team_name']}</b> Team to support your entity.<br>";
-                                    }
-                                }
-                            ?>
+	                                // TYPE 11
+	                                if ($row['Notification_Type'] == 11) {
+	                                    if ($login_type == 2) {
+	                                        $notifText = " Hi <b>{$row['Manager_Created']} </b> this notification is to inform you that a resource has been successfully Added to <b>{$row['team_name']}</b> Team to support your entity.<br>";
+	                                    }
+	                                }
+
+	                                // TYPE 34 (MEMBER: TEAM SCHEDULED)
+	                                if ($row['Notification_Type'] == 34) {
+	                                    if ($login_type == 3) {
+	                                        $teamName = !empty($row['team_name']) ? $row['team_name'] : 'your team';
+	                                        $notifText = "This notification confirms that <b>{$teamName}</b> has been scheduled to work.";
+	                                        $notifLink = "index.php?page=my_progress_calendar";
+	                                    }
+	                                }
+
+	                                // TYPE 35 (PM: TEAM SCHEDULED)
+	                                if ($row['Notification_Type'] == 35) {
+	                                    if ($login_type == 2) {
+	                                        $teamName = !empty($row['team_name']) ? $row['team_name'] : 'your team';
+	                                        $notifText = "This notification confirms that <b>{$teamName}</b> has been scheduled to work.";
+	                                        $notifLink = "index.php?page=my_teams_progress_calendar";
+	                                    }
+	                                }
+
+	                                // TYPE 111 (MEMBER: ORBITED)
+	                                if ($row['Notification_Type'] == 111) {
+	                                    if ($login_type == 3) {
+	                                        $entityName = !empty($row['Manager_Created']) ? $row['Manager_Created'] : 'your entity';
+	                                        $notifText = "This notification confirms that you have been orbited to support a new entity.<br>
+	                                            Entity: <b>{$entityName}</b>";
+	                                        $notifLink = "index.php?page=my_progress_calendar";
+	                                    }
+	                                }
+
+	                                // TYPE 222 (PM: NEW ORBITED MEMBER)
+	                                if ($row['Notification_Type'] == 222) {
+	                                    if ($login_type == 2) {
+	                                        $memberName = !empty($row['member']) ? $row['member'] : 'A member';
+	                                        $notifText = "This notification confirms that you have a new orbited member.<br>
+	                                            Member: <b>{$memberName}</b>";
+	                                        $notifLink = "index.php?page=orbit_member";
+	                                    }
+	                                }
+	                            ?>
 
                             <!-- Bubble Message -->
                             <div class="notif-bubble" id="notif_<?php echo $row['id']; ?>">
@@ -338,9 +387,9 @@ if ($login_id > 0) {
                 </a>
 
                 <div class="dropdown-menu dropdown-menu-right">
-                    <a class="dropdown-item" id="manage_account">
+                    <!-- <a class="dropdown-item" id="manage_account">
                         <i class="fa fa-cog"></i> Manage Account
-                    </a>
+                    </a> -->
 
                     <!-- ✅ Logout via POST + CSRF -->
                     <form id="logoutForm" action="ajax.php?action=logout" method="POST" style="display:none;">
@@ -498,6 +547,16 @@ if ($login_id > 0) {
     background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
     color: #742a2a;
     border: 1px solid #fc8181;
+}
+.notif-badge.type-8 { /* Team Assigned */
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    color: #22543d;
+    border: 1px solid #68d391;
+}
+.notif-badge.type-13 { /* Orbit Notification */
+    background: linear-gradient(135deg, #eef2ff 0%, #c7d2fe 100%);
+    color: #312e81;
+    border: 1px solid #818cf8;
 }
 
 /* Delete button */
@@ -731,10 +790,7 @@ if ($login_id > 0) {
 <script>
 $(document).ready(function() {
 
-    $('#manage_account').click(function(){
-        uni_modal('Manage Account','manage_user.php?id=<?php echo $_SESSION["login_id"] ?>');
-    });
-
+    
     // Add animation when there are notifications
     <?php if ($notif_count > 0): ?>
         $('.fa-bell').addClass('has-notifications');
@@ -764,19 +820,23 @@ $(document).ready(function() {
         // 3 = Job created (PM) / Activity assigned (Member)
         // 4 = Job Closed
         // 6 = Member account created
-        // 7 = Resource created and assigned to entity
+        // 7 = Entity created
         // 8 = Assigned to a team
         // 9 = Team created
         // 10 = Assigned to team + entity
         // 11 = Resource assigned to team
+        // 50 = Member created for entity
+        // 111 = Member orbited
+        // 222 = PM has new orbited member
 
         switch (ntype) {
             case 1:  return 5; // Request for Done
             case 2:  return 6; // Approved
             case 4:  return 7; // Job Completion
 
-            case 6:  return 1; // Member Creation
-            case 7:  return 1; // Member Creation (resource created)
+            case 6:  return 1;  // Member Creation
+            case 50: return 1;  // Member Creation
+            case 7:  return 12; // Entity Creation
 
             case 9:  return 2; // Team Creation
 
@@ -785,6 +845,12 @@ $(document).ready(function() {
 
             case 3:  return 4; // Assigned to Work
             case 11: return 3; // Assigned to Work
+
+            case 12: return 12; // Entity Creation
+            case 34: return 8;  // Team Assigned
+            case 35: return 8;  // Team Assigned
+            case 111:return 13; // Orbit Notification
+            case 222:return 13; // Orbit Notification
 
             default: return 4; // fallback
         }
@@ -799,6 +865,10 @@ $(document).ready(function() {
             case 5: return 'Request for Done';
             case 6: return 'Approved';
             case 7: return 'Job Completion';
+            case 8: return 'Team Assigned';
+            case 12: return 'Entity Creation';
+            case 13: return 'Orbit Notification';
+            case 50: return 'Member Creation';
             default: return 'Info';
         }
     }

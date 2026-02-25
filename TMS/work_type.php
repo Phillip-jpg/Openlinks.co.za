@@ -2,7 +2,7 @@
 <div class="col-lg-12">
 		<div class="card card-outline card-success shadow-sm">
 	<div class="card-header bg-primary text-white">
-		<?php if($_SESSION['login_type'] == 3): ?>
+		<?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
 			
 		<?php else: ?>
 			<div class="card-tools">
@@ -15,13 +15,14 @@
 		<div class="card-body">
 				<table class="table table-hover table-bordered table-condensed" id="list">
 				<colgroup>
-				<col width="5%">
-					<col width="30%">
+				<col width="10%">
+					<col width="10%">
 					<col width="10%">
 					<col width="10%">
 					<col width="10%">
 					<col width="10%">
 				    <col width="10%">
+					<col width="10%">
 				</colgroup>
 					<thead style="background-color:#032033 !important; color:white">
 					<tr>
@@ -31,31 +32,37 @@
 						<th>Price</th>
 						<th>No of Resources</th>
 						<th>Target</th>
+						<th>Date Created</th>
 						<th>Action</th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php
+
+					// echo $_SESSION['login_type'];
 					$i = 1;
 					if (isset($_SESSION['login_type']) && (int)$_SESSION['login_type'] === 2) {
-
-						$login_id = (int)($_SESSION['login_id'] ?? 0);
-
+				
 						$qry = $conn->query("
 							SELECT DISTINCT tl.*
 							FROM task_list tl
-							WHERE tl.creator_id = {$login_id}
+							WHERE tl.creator_id = {$_SESSION['login_id']}
 						");
+					}elseif (isset($_SESSION['login_type']) && (int)$_SESSION['login_type'] === 3) {
 
-					}
-					if (isset($_SESSION['login_type']) && (int)$_SESSION['login_type'] === 3) {
-
-						$login_id = (int)($_SESSION['login_id'] ?? 0);
+						// $login_id = (int)($_SESSION['login_id'] ?? 0);
 
 						$qry = $conn->query("
 							SELECT DISTINCT tl.*
-							FROM task_list tl
-							WHERE tl.creator_id = (Select creator_id from users where id = {$login_id})
+								FROM task_list tl
+								INNER JOIN members_and_worktypes mw
+								ON mw.work_type_id = tl.id
+								INNER JOIN users u
+								ON u.id = mw.member_id
+								WHERE mw.member_id = {$_SESSION['login_id']}
+								AND tl.creator_id = u.creator_id
+								ORDER BY tl.task_name
+								LIMIT 0, 25;
 						");
 
 					}else{
@@ -86,6 +93,11 @@
 							<p><b><?php echo ucwords($row['target']) ?></b></p>
 			
 						</td>
+
+						<td>
+							<p><b><?php echo ucwords(string: $row['date_created']) ?></b></p>
+			
+						</td>
 					
 						
 						<td class="text-center">
@@ -100,12 +112,12 @@
                                     $hash = hash_hmac('sha256', $payload, $secret);
                                     $encoded = base64_encode($payload . ':' . $hash);
                                     ?>
-		                      <?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 2 || $_SESSION['login_type'] == 4): ?>
+		                      <?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 4 || $_SESSION['login_type'] == 1): ?>
 								<a class="dropdown-item view_project" href="./index.php?page=view_work_type&id=<?php echo urlencode($encoded); ?>" data-id="<?php echo $row['id'] ?>">View</a>
 								<?php else: ?>
 								<a class="dropdown-item view_project" href="./index.php?page=view_work_type&id=<?php echo urlencode($encoded); ?>" data-id="<?php echo $row['id'] ?>">View</a>
 		                      <a class="dropdown-item" href="./index.php?page=edit_work_type&id=<?php echo urlencode($encoded); ?>">Edit</a>
-							  <a class="dropdown-item delete_task" href="javascript:void(0)" data-id="<?php echo $row['id'] ?>">Delete</a>
+							  <!-- <a class="dropdown-item delete_task" href="javascript:void(0)" data-id="<?php echo $row['id'] ?>">Delete</a> -->
 		                      
 		                      
 		                  <?php endif; ?>

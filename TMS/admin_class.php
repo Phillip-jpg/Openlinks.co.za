@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 class Action {
     public $db;
+    private $deferredEmailJobs = [];
 
     public function __construct() {
         include 'db_connect.php'; // ensures $conn exists
@@ -53,6 +54,66 @@ class Action {
 
     private function clearAttempts(string $key): void {
         unset($_SESSION['rl'][$key]);
+    }
+
+    private function queueEmailJob(string $to, string $subject, string $message): void
+    {
+        $to = trim($to);
+        if ($to === '') {
+            return;
+        }
+        $this->deferredEmailJobs[] = [
+            'to' => $to,
+            'subject' => $subject,
+            'message' => $message
+        ];
+    }
+
+    public function runEmailJobsNow(array $jobs): void
+    {
+        if (empty($jobs)) {
+            return;
+        }
+        if (!function_exists('sendEmailNotification')) {
+            include_once 'send_email.php';
+        }
+        if (!function_exists('sendEmailNotification')) {
+            return;
+        }
+
+        foreach ($jobs as $job) {
+            $to = (string)($job['to'] ?? '');
+            $subject = (string)($job['subject'] ?? '');
+            $message = (string)($job['message'] ?? '');
+
+            if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+                continue;
+            }
+
+            try {
+                sendEmailNotification($to, $subject, $message);
+            } catch (Throwable $e) {
+                error_log('Deferred email send failed: ' . $e->getMessage());
+            }
+        }
+
+    }
+
+    public function runDeferredEmailJobs(): void
+    {
+        if (empty($this->deferredEmailJobs)) {
+            return;
+        }
+        $jobs = $this->deferredEmailJobs;
+        $this->deferredEmailJobs = [];
+        $this->runEmailJobsNow($jobs);
+    }
+
+    public function dequeueDeferredEmailJobs(): array
+    {
+        $jobs = $this->deferredEmailJobs;
+        $this->deferredEmailJobs = [];
+        return $jobs;
     }
 
     // ---------------------------
@@ -217,21 +278,80 @@ class Action {
 }
 
 	
-	private function cleanString($value)
-        {
-            if (is_array($value)) {
-                return '';
-            }
-        
-            $value = trim((string)$value);
-            $value = strip_tags($value);
-            return $value;
-        }
-	
-	
-	
+		private function cleanString($value)
+	        {
+	            if (is_array($value)) {
+	                return '';
+	            }
+	        
+	            $value = trim((string)$value);
+	            $value = strip_tags($value);
+	            return $value;
+	        }
+
+	private function dispatchUserCreationEmailsInBackground(int $memberId, int $createdType): void
+	{
+	    if ($memberId <= 0) {
+	        return;
+	    }
+
+	    $scriptPath = __DIR__ . DIRECTORY_SEPARATOR . 'send_user_creation_emails_bg.php';
+	    if (!is_file($scriptPath)) {
+	        error_log("Background email script missing: " . $scriptPath);
+	        return;
+	    }
+
+	    $phpBinary = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : '';
+	    if ($phpBinary === '' || !is_file($phpBinary) || stripos((string)basename($phpBinary), 'php') === false) {
+	        $bindirPhp = defined('PHP_BINDIR') ? PHP_BINDIR . DIRECTORY_SEPARATOR . 'php.exe' : '';
+	        if ($bindirPhp !== '' && is_file($bindirPhp)) {
+	            $phpBinary = $bindirPhp;
+	        } else {
+	            $phpBinary = 'php';
+	        }
+	    }
+
+	    $memberArg = '--member_id=' . (int)$memberId;
+	    $typeArg = '--type=' . (int)$createdType;
+	    $started = false;
+
+	    try {
+	        if (defined('PHP_OS_FAMILY') && PHP_OS_FAMILY === 'Windows') {
+	            // Force working directory to TMS so all relative includes resolve consistently.
+	            $launcher = 'cmd /c cd /d "' . __DIR__ . '" && start "" /B "' . $phpBinary . '" "' . $scriptPath . '" ' . $memberArg . ' ' . $typeArg;
+	            $h = @popen($launcher, 'r');
+	            if (is_resource($h)) {
+	                @pclose($h);
+	                $started = true;
+	            }
+	        } else {
+	            $cmd = '"' . $phpBinary . '" "' . $scriptPath . '" ' . $memberArg . ' ' . $typeArg . ' > /dev/null 2>&1 &';
+	            @exec($cmd);
+	            $started = true;
+	        }
+	    } catch (Throwable $e) {
+	        error_log("Failed to dispatch background user emails: " . $e->getMessage());
+	    }
+
+	    // Fallback: run synchronously so email is never dropped.
+	    if (!$started) {
+	        try {
+	            if (defined('PHP_OS_FAMILY') && PHP_OS_FAMILY === 'Windows') {
+	                @exec('"' . $phpBinary . '" "' . $scriptPath . '" ' . $memberArg . ' ' . $typeArg);
+	            } else {
+	                @exec('"' . $phpBinary . '" "' . $scriptPath . '" ' . $memberArg . ' ' . $typeArg);
+	            }
+	        } catch (Throwable $e) {
+	            error_log("Fallback email dispatch failed: " . $e->getMessage());
+	        }
+	    }
+	}
+		
+		
+		
 function save_user(){
     extract($_POST);
+    $idInt = !empty($id) ? (int)$id : 0;
 
     // --------- SECURITY: column allowlist (only columns that exist in users table) ----------
     $allowedCols = [
@@ -247,6 +367,8 @@ function save_user(){
             continue;
         }
         if (is_numeric($k)) continue;
+        // Never allow role/type changes on existing users.
+        if ($idInt > 0 && $k === 'type') continue;
 
         // only allow known DB columns
         if (!in_array($k, $allowedCols, true)) {
@@ -265,8 +387,6 @@ function save_user(){
     }
 
     $emailSafe = $this->db->real_escape_string((string)$email);
-
-    $idInt = !empty($id) ? (int)$id : 0;
 
     $checkSql = "SELECT 1 FROM users WHERE email ='$emailSafe' ".($idInt ? " AND id != {$idInt} " : "")." LIMIT 1";
     $check = $this->db->query($checkSql);
@@ -310,6 +430,8 @@ function save_user(){
 
     // Creator from session only (don’t trust POST)
     $creator_id = (int)($_SESSION['login_id'] ?? 0);
+    $backgroundEmailMemberId = 0;
+    $backgroundEmailType = 0;
 
     // ----------------- TRANSACTION -----------------
     $this->db->begin_transaction();
@@ -346,20 +468,30 @@ function save_user(){
                 throw new Exception("INSERT users failed: ".$this->db->error);
             }
 
-            $insert_notifications = "
-                INSERT INTO member_notifications 
-                (PM_ID, Member_ID, Notification_Type)
-                VALUES ($creator_id, $new_id, 6)
-            ";
-            $this->db->query($insert_notifications);
-            
-            
-            $insert_notifications = "
-                INSERT INTO pm_notifications 
-                (PM_ID, Member_ID, Notification_Type)
-                VALUES ($creator_id, $new_id, 7)
-            ";
-            $this->db->query($insert_notifications);
+	            if (isset($type) && (int)$type === 2) {
+	                $insert_notifications = "
+	                    INSERT INTO pm_notifications 
+	                    (PM_ID, Member_ID, Notification_Type)
+	                    VALUES ($new_id, 0, 7)
+	                ";
+	                $this->db->query($insert_notifications);
+	            }elseif(isset($type) && (int)$type === 3){
+                    $insert_notifications = "
+	                INSERT INTO member_notifications 
+	                (PM_ID, Member_ID, Notification_Type)
+	                VALUES ($creator_id, $new_id, 6)
+	            ";
+                    $this->db->query($insert_notifications);   
+                    
+                    
+                     $insert_notifications2 = "
+	                INSERT INTO pm_notifications 
+	                (PM_ID, Member_ID, Notification_Type)
+	                VALUES ($creator_id, $new_id, 50)
+	            ";
+                    $this->db->query($insert_notifications2);
+
+                }
             
             
 
@@ -385,6 +517,13 @@ function save_user(){
                 }
             }
 
+            // Dispatch email after response via background CLI worker.
+            $backgroundEmailMemberId = (int)$new_id;
+            $backgroundEmailType = isset($type) ? (int)$type : 0;
+
+            // Keep legacy template code below but skip inline SMTP so save_user returns fast.
+            if (false) {
+
             // ===================== EMAIL STUFF (FIXED) =====================
             // Send emails only for NEW members, and do it BEFORE commit/return.
             // Uses $new_id (the newly created user's "id"), not $idInt.
@@ -404,7 +543,13 @@ function save_user(){
                     uc.email  AS manager_email,
                     uc.number AS manager_number,
 
-                    IF(u.type = 3, 'Member', NULL) AS Role
+	                    CASE
+	                        WHEN u.type = 1 THEN 'Super Admin'
+	                        WHEN u.type = 2 THEN 'Project Manager'
+	                        WHEN u.type = 3 THEN 'Member'
+	                        WHEN u.type = 4 THEN 'Admin Assistant'
+	                        ELSE 'User'
+	                    END AS Role
                 FROM member_notifications nt
                 LEFT JOIN users u  ON u.id = nt.Member_ID
                 LEFT JOIN users uc ON uc.id = u.creator_id
@@ -539,9 +684,9 @@ function save_user(){
                 </html>
                 ";
 
-                $message2 = "
-                <!DOCTYPE html>
-                <html>
+	                $message2 = "
+	                <!DOCTYPE html>
+	                <html>
                 <head>
                     <meta charset='UTF-8'>
                     <title>Resource Created</title>
@@ -615,18 +760,119 @@ function save_user(){
                         </tr>
                     </table>
                 </body>
-                </html>
-                ";
+	                </html>
+	                ";
+	
+	                if (isset($type) && (int)$type === 2) {
+	                    $main_admin_name = 'Main Admin';
+	                    $main_admin_email = '';
+	                    $main_admin_number = '';
+	
+	                    $mainAdminQ = $this->db->query("
+	                        SELECT CONCAT(firstname, ' ', lastname) AS name, email, number
+	                        FROM users
+	                        WHERE type = 1
+	                        ORDER BY id ASC
+	                        LIMIT 1
+	                    ");
+	                    if ($mainAdminQ && $mainAdminQ->num_rows > 0) {
+	                        $mainAdminRow = $mainAdminQ->fetch_assoc();
+	                        $main_admin_name = trim((string)($mainAdminRow['name'] ?? 'Main Admin'));
+	                        if ($main_admin_name === '') {
+	                            $main_admin_name = 'Main Admin';
+	                        }
+	                        $main_admin_email = (string)($mainAdminRow['email'] ?? '');
+	                        $main_admin_number = (string)($mainAdminRow['number'] ?? '');
+	                    }
+	
+	                    $member_safe = htmlspecialchars((string)$member, ENT_QUOTES, 'UTF-8');
+	                    $member_email_safe = htmlspecialchars((string)$member_email, ENT_QUOTES, 'UTF-8');
+	                    $entity_safe = htmlspecialchars((string)$manager_name, ENT_QUOTES, 'UTF-8');
+	                    $main_admin_name_safe = htmlspecialchars((string)$main_admin_name, ENT_QUOTES, 'UTF-8');
+	                    $main_admin_email_safe = htmlspecialchars((string)$main_admin_email, ENT_QUOTES, 'UTF-8');
+	                    $main_admin_number_safe = htmlspecialchars((string)$main_admin_number, ENT_QUOTES, 'UTF-8');
+	
+	                    $subject = "Welcome to Your Entity";
+	
+	                    $message1 = "
+	                    <!DOCTYPE html>
+	                    <html>
+	                    <head>
+	                        <meta charset='UTF-8'>
+	                        <title>Welcome to Your Entity</title>
+	                    </head>
+	                    <body style='margin:0;padding:0;background-color:#f4f6f8;'>
+	                        <table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f4f6f8;padding:30px 0;'>
+	                            <tr>
+	                                <td align='center'>
+	                                    <table width='600' cellpadding='0' cellspacing='0' style='background:#ffffff;border-radius:8px;overflow:hidden;font-family:Arial,sans-serif;'>
+	                                        <tr>
+	                                            <td style='padding:20px;background:#0f1f3d;color:white;'>
+	                                                <table width='100%'>
+	                                                    <tr>
+	                                                        <td align='left'>
+	                                                            <img src='https://openlinks.co.za/TMS/Image_Redone.png' height='80' width='200'>
+	                                                        </td>
+	                                                        <td align='right' style='font-size:13px;line-height:18px;'>
+	                                                            <b>OpenLinks Corporations (Pty) Ltd</b><br>
+	                                                            314 Cape Road, Newton Park<br>
+	                                                            Port Elizabeth, Eastern Cape 6070
+	                                                        </td>
+	                                                    </tr>
+	                                                </table>
+	                                            </td>
+	                                        </tr>
+	                                        <tr>
+	                                            <td style='padding:30px;color:#333;font-size:15px;'>
+	                                                <p>Hi <b>$member_safe</b>,</p>
+	                                                <p>Welcome to Openlinks your account has been created successfully.</p>
+	                                                <table width='100%' cellpadding='8' cellspacing='0' style='border-collapse:collapse;font-size:14px;margin-top:15px;'>
+	                                                    <tr><td style='background:#f0f3f7;width:35%;'><b>Role</b></td><td>Entity</td></tr>
+	                                                    <tr><td style='background:#f0f3f7;'><b>Email</b></td><td>$member_email_safe</td></tr>
+	                                                </table>
+	                                                <p style='margin-top:18px;'>
+	                                                    If you need any assistance, please contact the Main Admin:
+	                                                </p>
+	                                                <table width='100%' cellpadding='8' cellspacing='0' style='border-collapse:collapse;font-size:14px;margin-top:10px;'>
+	                                                    <tr><td style='background:#f0f3f7;width:35%;'><b>Main Admin</b></td><td>$main_admin_name_safe</td></tr>
+	                                                    <tr><td style='background:#f0f3f7;'><b>Email</b></td><td>$main_admin_email_safe</td></tr>
+	                                                    <tr><td style='background:#f0f3f7;'><b>Contact Number</b></td><td>$main_admin_number_safe</td></tr>
+	                                                </table>
+	                                                <div style='text-align:center;margin:35px 0;'>
+	                                                    <a href='https://openlinks.co.za/' style='background:#0f1f3d;color:#ffffff;padding:14px 30px;text-decoration:none;border-radius:5px;font-size:15px;font-weight:bold;'>
+	                                                        Go to Openlinks
+	                                                    </a>
+	                                                </div>
+	                                                <p>
+	                                                    Kind regards,<br>
+	                                                    <b>OpenLinks Operations System</b>
+	                                                </p>
+	                                            </td>
+	                                        </tr>
+	                                        <tr>
+	                                            <td style='background:#f0f3f7;padding:15px;text-align:center;font-size:12px;'>
+	                                                <small>Automated Notification - Do not reply</small>
+	                                            </td>
+	                                        </tr>
+	                                    </table>
+	                                </td>
+	                            </tr>
+	                        </table>
+	                    </body>
+	                    </html>
+	                    ";
+	                }
 
-                // SEND EMAILS (FIXED RECIPIENTS)
-                if (!empty($member_email)) {
-                    sendEmailNotification("$member_email", $subject, $message1);
+	                // SEND EMAILS (FIXED RECIPIENTS)
+	                if (!empty($member_email)) {
+	                    sendEmailNotification("$member_email", $subject, $message1);
                 }
                 if (!empty($manager_email)) {
                     sendEmailNotification("$manager_email", $subject2, $message2);
                 }
             }
             // =================== /EMAIL STUFF (FIXED) ===================
+            }
 
         } else {
 
@@ -659,6 +905,8 @@ function save_user(){
             // remove fields not in users table
             $data = preg_replace('/industry_id[^,]*,/', '', $data);
             $data = preg_replace('/OFFICE_ID[^,]*,/', '', $data);
+            $data = preg_replace("/(^|,)\\s*type\\s*=\\s*'[^']*'\\s*/i", '$1 ', $data);
+            $data = trim(preg_replace('/\\s+,\\s+/', ', ', $data), " ,");
 
             $save = $this->db->query("UPDATE users SET $data WHERE id = $idInt");
             if(!$save){
@@ -667,6 +915,11 @@ function save_user(){
         }
 
         $this->db->commit();
+
+        if ($backgroundEmailMemberId > 0) {
+            $this->dispatchUserCreationEmailsInBackground($backgroundEmailMemberId, $backgroundEmailType);
+        }
+
         return 1;
 
     } catch (Exception $e) {
@@ -1404,7 +1657,7 @@ ORDER BY
     if ($c > 0) return 2;
 
     // Build basic insert from allowed keys
-    $allowed = ['firstname','lastname','middlename','email','number','type'];
+    $allowed = ['firstname','lastname','middlename','email','number'];
     $fields = [];
     foreach ($allowed as $k) {
         if (isset($_POST[$k])) $fields[$k] = $this->cleanString($_POST[$k]);
@@ -1447,7 +1700,8 @@ ORDER BY
     $c = (int)$stmt->get_result()->fetch_assoc()['c'];
     if ($c > 0) return 2;
 
-    $allowed = ['firstname','lastname','middlename','email','number','type'];
+    // Type/role is immutable after creation; never accept it on edit.
+    $allowed = ['firstname','lastname','middlename','email','number'];
     $fields = [];
     foreach ($allowed as $k) {
         if (isset($_POST[$k])) $fields[$k] = $this->cleanString($_POST[$k]);
@@ -1776,8 +2030,6 @@ function delete_discount() {
                         }
                     }
                 }
-                include 'send_email.php';
-
                 $projectId = (int)$id;
                 $teamId    = (int)$team_ids;
                 
@@ -1788,22 +2040,45 @@ function delete_discount() {
                    1) Get job data FIRST
                 ------------------------------ */
                 $Query = $this->db->query("
-                    SELECT DISTINCT
+                    SELECT
                         pl.name AS jobname,
                         DATE_FORMAT(pl.start_date, '%d-%m-%Y') AS start_date_dmy,
                         DATE_FORMAT(pl.end_date, '%d-%m-%Y') AS end_date_dmy,
                         pl.JOB_TYPE,
                         s.Title,
                         u.email AS manager_email,
-                        ts.team_name,
                         c.company_name,
+                        c.Email as COMPANY_EMAIL,
                         CONCAT(u.firstname, ' ', u.lastname) AS manager,
-                        NOW() AS submitted_date
+                        NOW() AS submitted_date,
+                        (
+                            SELECT ts1.team_name
+                            FROM team_schedule ts1
+                            WHERE ts1.team_id = pl.team_ids
+                              AND ts1.team_name IS NOT NULL
+                              AND ts1.team_name <> ''
+                            LIMIT 1
+                        ) AS team_name,
+                        (
+                            SELECT cr1.REP_NAME
+                            FROM client_rep cr1
+                            WHERE cr1.CLIENT_ID = pl.CLIENT_ID
+                              AND cr1.REP_EMAIL IS NOT NULL
+                              AND cr1.REP_EMAIL <> ''
+                            LIMIT 1
+                        ) AS REP_NAME,
+                        (
+                            SELECT cr2.REP_EMAIL
+                            FROM client_rep cr2
+                            WHERE cr2.CLIENT_ID = pl.CLIENT_ID
+                              AND cr2.REP_EMAIL IS NOT NULL
+                              AND cr2.REP_EMAIL <> ''
+                            LIMIT 1
+                        ) AS REP_EMAIL
                     FROM project_list pl
                     LEFT JOIN users u ON u.id = pl.manager_id
                     LEFT JOIN yasccoza_openlink_market.client c ON pl.CLIENT_ID = c.CLIENT_ID
                     LEFT JOIN yasccoza_openlink_market.scorecard s ON pl.scorecard = s.SCORECARD_ID
-                    LEFT JOIN team_schedule ts ON pl.team_ids = ts.team_id
                     WHERE pl.id = $projectId
                     LIMIT 1
                 ");
@@ -1822,6 +2097,9 @@ function delete_discount() {
                 $scorecard      = (string)$data['Title'];
                 $jobtype        = (string)$data['JOB_TYPE'];
                 $company_name   = (string)$data['company_name'];
+                $rep_name       = isset($data['REP_NAME']) ? (string)$data['REP_NAME'] : '';
+                $rep_email      = isset($data['REP_EMAIL']) ? (string)$data['REP_EMAIL'] : '';
+                $company_email  = isset($data['COMPANY_EMAIL']) ? (string)$data['COMPANY_EMAIL'] : '';
                 $date_submitted = (string)$data['submitted_date'];
                 
                 /* -----------------------------
@@ -1931,7 +2209,7 @@ function delete_discount() {
                         <small>Automated Notification – Do not reply</small></td></tr>
                         </table></td></tr></table></body></html>";
                 
-                        sendEmailNotification($member_email, $subject, $message_member);
+                        $this->queueEmailJob($member_email, $subject, $message_member);
                         $sent[$member_email] = true;
                     }
                 }
@@ -1948,8 +2226,39 @@ function delete_discount() {
                         $message_member // reuse the same template body (already contains all job info)
                     );
                 
-                    sendEmailNotification($mgrEmail, $subject, $message_manager);
+                    $this->queueEmailJob($mgrEmail, $subject, $message_manager);
                     $sent[$mgrEmail] = true;
+                }
+
+                /* -----------------------------
+                   5) Send to client rep + company (once each)
+                ------------------------------ */
+                $baseMessage = isset($message_manager) && $message_manager !== ''
+                    ? $message_manager
+                    : (isset($message_member) ? $message_member : '');
+
+                $repEmail = strtolower(trim($rep_email));
+                if ($repEmail !== '' && !isset($sent[$repEmail]) && $baseMessage !== '') {
+                    $repNameSafe = trim($rep_name) !== '' ? $rep_name : 'Client Representative';
+                    $message_rep = str_replace(
+                        "Dear <b>$manager_name</b>,",
+                        "Dear <b>$repNameSafe</b>,",
+                        $baseMessage
+                    );
+                    $this->queueEmailJob($repEmail, $subject, $message_rep);
+                    $sent[$repEmail] = true;
+                }
+
+                $companyEmail = strtolower(trim($company_email));
+                if ($companyEmail !== '' && !isset($sent[$companyEmail]) && $baseMessage !== '') {
+                    $companyRecipient = trim($company_name) !== '' ? $company_name : 'Client';
+                    $message_company = str_replace(
+                        "Dear <b>$manager_name</b>,",
+                        "Dear <b>$companyRecipient</b>,",
+                        $baseMessage
+                    );
+                    $this->queueEmailJob($companyEmail, $subject, $message_company);
+                    $sent[$companyEmail] = true;
                 }
 
                 return 1;
