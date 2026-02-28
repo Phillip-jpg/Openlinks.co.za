@@ -12,9 +12,11 @@
 <div class="col-lg-12">
   	<div class="card card-outline card-success shadow-sm">
 		<div class="card-header bg-primary text-white">
+          <?php if($_SESSION['login_type'] == 2): ?>
             <div class="card-tools">
                 <a class="btn btn-block btn-sm btn-default btn-flat border-primary" href="./index.php?page=new_client_rep"><i class="fa fa-plus"></i> Add Client Rep</a>
             </div>
+            <?php endif; ?>
         </div>
         <div class="card-body">
          	<table class="table table-hover table-bordered table-condensed" id="list">
@@ -72,7 +74,7 @@
                         <td style="font-weight: lighter;"><b><?php echo $row['REP_CONTACT'] ?></b></td>
                         <td class="text-center">
                             <div class="btn-group">
-                                  <?php if($_SESSION['login_type'] == 4): ?>
+                                  <?php if($_SESSION['login_type'] == 4 || $_SESSION['login_type'] == 1 || $_SESSION['login_type'] == 3): ?>
                                  <?php echo "Not Authorised"?>
                                     <?php else: ?>
                                 <button type="button" class="btn btn-default btn-sm btn-flat border-info wave-effect text-info dropdown-toggle" data-toggle="dropdown" aria-expanded="true">
@@ -88,7 +90,7 @@
                                     ?>
                                  <a class="dropdown-item" href="./index.php?page=edit_rep&id=<?php echo urlencode($encoded); ?>">Edit</a>
                                  <div class="dropdown-divider"></div>
-                                 <a class="dropdown-item delete_rep" href="javascript:void(0)" data-id="<?php echo $row['REP_ID'] ?>">Delete</a>
+                                 <!-- <a class="dropdown-item delete_rep" href="javascript:void(0)" data-id="<?php echo $row['REP_ID'] ?>">Delete</a> -->
                              </div>
                                 
                                 

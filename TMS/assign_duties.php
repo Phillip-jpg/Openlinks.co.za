@@ -82,6 +82,9 @@ if (!empty($taskIdsString)) {
 
 
 <div class="col-lg-12">
+    <div class="mb-3">
+        <a href="./index.php?page=productivity_pipeline" class="btn btn-primary btn-sm">Back to Productivity Pipeline</a>
+    </div>
     <?php echo "<p style='font-size:20px'>Job being assigned: <span style='color:red'>" . $qry['name'] . "</span></p>"; ?>
     <div class="card card-outline card-primary">
         <form action="save_assign.php" method="post" id="save-assign">

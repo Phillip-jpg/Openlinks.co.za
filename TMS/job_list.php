@@ -16,9 +16,9 @@ if (empty($_SESSION['csrf_token'])) {
   <div class="card card-outline card-success shadow-sm">
     <div class="card-header bg-primary text-white">
       <div class="card-tools">
-        <a class="btn btn-block btn-sm btn-default btn-flat border-primary" href="./index.php?page=new_job">
+        <!-- <a class="btn btn-block btn-sm btn-default btn-flat border-primary" href="./index.php?page=new_job">
           <i class="fa fa-plus"></i> Add New Job
-        </a>
+        </a> -->
       </div>
     </div>
 
@@ -59,6 +59,28 @@ if (empty($_SESSION['csrf_token'])) {
         </div>
 
         <div class="col-md-3">
+          <label for="team-filter">Filter by Team:</label>
+          <select id="team-filter" class="form-control">
+            <option value="">All</option>
+            <?php
+              $team_qry = $conn->query("
+                SELECT DISTINCT ts.team_name
+                FROM project_list pl
+                LEFT JOIN team_schedule ts ON pl.team_ids = ts.team_id
+                WHERE ts.team_name IS NOT NULL
+                  AND ts.team_name <> ''
+                ORDER BY ts.team_name ASC
+              ");
+              while($team_row = $team_qry->fetch_assoc()):
+            ?>
+              <option value="<?php echo htmlspecialchars($team_row['team_name']); ?>">
+                <?php echo htmlspecialchars($team_row['team_name']); ?>
+              </option>
+            <?php endwhile; ?>
+          </select>
+        </div>
+
+        <div class="col-md-3">
           <label for="created-filter">Filter by Who created it:</label>
           <select id="created-filter" class="form-control">
             <option value="">All</option>
@@ -72,6 +94,27 @@ if (empty($_SESSION['csrf_token'])) {
             ?>
               <option value="<?php echo htmlspecialchars($creator_row['P_name']); ?>">
                 <?php echo htmlspecialchars($creator_row['P_name']); ?>
+              </option>
+            <?php endwhile; ?>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label for="entity-filter">Filter by Entity:</label>
+          <select id="entity-filter" class="form-control">
+            <option value="">All</option>
+            <?php
+              $entity_qry = $conn->query("
+                SELECT DISTINCT CONCAT(u.firstname, ' ', u.lastname) AS entity_name
+                FROM project_list pl
+                LEFT JOIN users u ON pl.manager_id = u.id
+                WHERE u.id IS NOT NULL
+                ORDER BY entity_name ASC
+              ");
+              while($entity_row = $entity_qry->fetch_assoc()):
+            ?>
+              <option value="<?php echo htmlspecialchars($entity_row['entity_name']); ?>">
+                <?php echo htmlspecialchars($entity_row['entity_name']); ?>
               </option>
             <?php endwhile; ?>
           </select>
@@ -117,7 +160,7 @@ if (empty($_SESSION['csrf_token'])) {
         <table class="table tabe-hover table-condensed" id="list">
           <colgroup>
             <col width="5%">
-            <col width="40%">
+            <col width="30%">
             <col width="15%">
             <col width="15%">
             <col width="15%">
@@ -130,6 +173,7 @@ if (empty($_SESSION['csrf_token'])) {
               <th>Job</th>
               <th>Job Type</th>
               <th>Team Name</th>
+              <th>Entity</th>
               <th>Date Created</th>
               <th>Who Created it</th>
               <th>Assigned</th>
@@ -145,10 +189,12 @@ if (empty($_SESSION['csrf_token'])) {
               $qry = $conn->query("
                 SELECT DISTINCT
                   CONCAT(u.firstname, ' ', u.lastname) AS c_name,
+                  CONCAT(u1.firstname, ' ', u1.lastname) AS entity_name,
                   pl.*,
                   ts.team_name
                 FROM project_list pl
                 LEFT JOIN users u ON pl.Creator_ID = u.id
+                LEFT JOIN users u1 ON pl.manager_id = u1.id
                 LEFT JOIN team_schedule ts ON pl.team_ids = ts.team_id
                 ORDER BY pl.id DESC
               ");
@@ -170,6 +216,7 @@ if (empty($_SESSION['csrf_token'])) {
                 <td><p><b><?php echo htmlspecialchars(ucwords($shortenedJobName)); ?></b></p></td>
                 <td><p><b><?php echo htmlspecialchars(ucwords($row['JOB_TYPE'])); ?></b></p></td>
                 <td><p><b><?php echo htmlspecialchars(ucwords($row['team_name'])); ?></b></p></td>
+                <td><p><b><?php echo empty($row['entity_name']) ? 'N/A' : htmlspecialchars(ucwords($row['entity_name'])); ?></b></p></td>
                 <td><p><b><?php echo htmlspecialchars($row['date_created']); ?></b></p></td>
 
                 <td>
@@ -209,29 +256,29 @@ if (empty($_SESSION['csrf_token'])) {
                   <div class="dropdown-menu">
                     <!-- ✅ View uses job= (base64) instead of id= -->
                     <a class="dropdown-item view_project"
-                       href="./index.php?page=view_job&job=<?php echo $jobRef; ?>">
+                       href="./index.php?page=view_job&job=<?php echo $jobRef; ?>&back=job_list">
                       View
                     </a>
 
                 
                       <!-- Keeping existing id links as-is. If you want, we can also convert these to job= -->
-                      <a class="dropdown-item view_project"
+                      <!-- <a class="dropdown-item view_project"
                          href="./index.php?page=assign_duties&job=<?php echo $jobRef ?>">
                         Assign
-                      </a>
+                      </a> -->
                  
 
     
-                      <a class="dropdown-item"
+                      <!-- <a class="dropdown-item"
                          href="./index.php?page=edit_job&id=<?php echo $jobRef; ?>">
                         Edit
-                      </a>
-
+                      </a> -->
+<!-- 
                       <a class="dropdown-item delete_project"
                          href="javascript:void(0)"
                          data-id="<?php echo (int)$row['id']; ?>">
                         Delete
-                      </a>
+                      </a> -->
                   </div>
                 </td>
               </tr>
@@ -248,17 +295,21 @@ if (empty($_SESSION['csrf_token'])) {
 $(document).ready(function(){
 
   // ✅ Initialize once
-  var dataTable = $('#list').DataTable();
+  var dataTable = $('#list').DataTable({
+    order: [[0, 'desc']]
+  });
 
   // Filters
-  $('#jobtype-filter, #month-filter, #created-filter, #assigned-filter, #status-filter').change(function(){
+  $('#jobtype-filter, #month-filter, #team-filter, #created-filter, #entity-filter, #assigned-filter, #status-filter').change(function(){
     filterTable();
   });
 
   function filterTable() {
     var selectedJobType  = $('#jobtype-filter').val();
     var selectedMonth    = $('#month-filter').val();
+    var selectedTeam     = $('#team-filter').val();
     var selectedCreator  = $('#created-filter').val();
+    var selectedEntity   = $('#entity-filter').val();
     var selectedAssigned = $('#assigned-filter').val();
     var selectedStatus   = $('#status-filter').val();
 
@@ -267,19 +318,22 @@ $(document).ready(function(){
     // 1 Job
     // 2 Job Type
     // 3 Team Name
-    // 4 Date Created
-    // 5 Who Created it
-    // 6 Assigned
-    // 7 Status
+    // 4 Entity
+    // 5 Date Created
+    // 6 Who Created it
+    // 7 Assigned
+    // 8 Status
 
     dataTable
       .column(2).search(selectedJobType)
+      .column(3).search(selectedTeam)
+      .column(4).search(selectedEntity)
       // NOTE: Month isn't an actual column in the table, so DataTables can't search it directly.
       // If you want month filter to work properly, we must add a Month column (hidden or visible)
       // OR use a custom DataTables filter on Date Created.
-      .column(5).search(selectedCreator)
-      .column(6).search(selectedAssigned)
-      .column(7).search(selectedStatus)
+      .column(6).search(selectedCreator)
+      .column(7).search(selectedAssigned)
+      .column(8).search(selectedStatus)
       .draw();
   }
 

@@ -48,6 +48,18 @@ if ($login_id <= 0) {
     die("Session expired. Please login again.");
 }
 
+$backPage = '';
+$backTeamRef = '';
+if (isset($_GET['back'])) {
+    $requestedBack = (string)$_GET['back'];
+    if (in_array($requestedBack, ['productivity_pipeline', 'job_list', 'home', 'jobs_to_manage', 'jobs_to_manage_level1', 'my_team_jobs_to_manage', 'my_team_jobs_to_manage_lvl_1'], true)) {
+        $backPage = $requestedBack;
+    }
+}
+if (isset($_GET['back_team']) && $_GET['back_team'] !== '') {
+    $backTeamRef = (string)$_GET['back_team'];
+}
+
 $stat = array("Pending","Started","On-Progress","On-Hold","Over Due","Done");
 
 /* ✅ FIX: use decoded id via $_GET['id'] (now set above) */
@@ -145,6 +157,29 @@ if ($qry4) {
 
 
 <div class="col-lg-12">
+    <?php if ($backPage !== ''): ?>
+    <div class="mb-3">
+        <a href="./index.php?page=<?php echo htmlspecialchars($backPage, ENT_QUOTES, 'UTF-8'); ?><?php echo (in_array($backPage, ['jobs_to_manage_level1', 'my_team_jobs_to_manage_lvl_1'], true) && $backTeamRef !== '') ? '&team_id=' . rawurlencode($backTeamRef) : ''; ?>" class="btn btn-primary btn-sm">
+            <?php
+                if ($backPage === 'productivity_pipeline') {
+                    echo 'Back to Productivity Pipeline';
+                } elseif ($backPage === 'job_list') {
+                    echo 'Back to Job List';
+                } elseif ($backPage === 'jobs_to_manage') {
+                    echo 'Back to Jobs To Manage';
+                } elseif ($backPage === 'jobs_to_manage_level1') {
+                    echo 'Back to Jobs To Manage Level 1';
+                } elseif ($backPage === 'my_team_jobs_to_manage') {
+                    echo 'Back to My Team Jobs To Manage';
+                } elseif ($backPage === 'my_team_jobs_to_manage_lvl_1') {
+                    echo 'Back to My Team Jobs To Manage Level 1';
+                } else {
+                    echo 'Back to Home';
+                }
+            ?>
+        </a>
+    </div>
+<?php endif; ?>
 	<div class="row">
 		<div class="col-md-12">
 			<div class="callout callout-info">
@@ -391,7 +426,7 @@ $projectId = $_GET['id'];
 // Check if the project ID is set and not empty
 if (!empty($projectId)) {
                 // Query to select user last names and first names where activity_ids match
-                $query = "SELECT CONCAT(firstname, ' ',lastname ) AS full_name, name FROM users 
+                $query = "SELECT DISTINCT CONCAT(firstname, ' ',lastname ) AS full_name, name FROM users 
                           INNER JOIN assigned_duties ON users.id = assigned_duties.user_id 
                           INNER JOIN user_productivity ON user_productivity.id = assigned_duties.activity_id
                           WHERE assigned_duties.project_id = $projectId";

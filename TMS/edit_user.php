@@ -23,7 +23,15 @@ if (!hash_equals($expected, $hash)) {
 $id = (int)$id;
 
 // now safe to query
-$qry = $conn->query("SELECT * FROM users WHERE id = $id");
+$qrySql = "SELECT * FROM users WHERE id = $id";
+if ((int)($_SESSION['login_type'] ?? 0) === 2 && !empty($_SESSION['login_id'])) {
+    $loginId = (int)$_SESSION['login_id'];
+    $qrySql .= " AND (creator_id = $loginId OR id = $loginId)";
+    $qrySql .= " ORDER BY CASE WHEN creator_id = $loginId THEN 0 ELSE 1 END, orbit DESC, date_created DESC LIMIT 1";
+} else {
+    $qrySql .= " ORDER BY orbit DESC, date_created DESC LIMIT 1";
+}
+$qry = $conn->query($qrySql);
 if (!$qry || $qry->num_rows === 0) {
     die('User not found');
 }

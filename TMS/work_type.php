@@ -32,6 +32,9 @@
 						<th>Price</th>
 						<th>No of Resources</th>
 						<th>Target</th>
+						<?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
+							<th>Entity</th>
+						<?php endif; ?>				
 						<th>Date Created</th>
 						<th>Action</th>
 					</tr>
@@ -53,12 +56,15 @@
 						// $login_id = (int)($_SESSION['login_id'] ?? 0);
 
 						$qry = $conn->query("
-							SELECT DISTINCT tl.*
+							SELECT DISTINCT tl.*,
+							CONCAT(pm.firstname, ' ', pm.lastname) AS entity_name
 								FROM task_list tl
 								INNER JOIN members_and_worktypes mw
 								ON mw.work_type_id = tl.id
 								INNER JOIN users u
 								ON u.id = mw.member_id
+								INNER JOIN users pm
+								ON pm.id = u.creator_id
 								WHERE mw.member_id = {$_SESSION['login_id']}
 								AND tl.creator_id = u.creator_id
 								ORDER BY tl.task_name
@@ -66,7 +72,12 @@
 						");
 
 					}else{
-					    $qry = $conn->query("SELECT * FROM task_list order by id asc");
+					    $qry = $conn->query("
+							SELECT tl.*, CONCAT(pm.firstname, ' ', pm.lastname) AS entity_name
+							FROM task_list tl
+							LEFT JOIN users pm ON pm.id = tl.creator_id
+							ORDER BY tl.id ASC
+						");
 					}
 					while($row= $qry->fetch_assoc()):
 			
@@ -93,7 +104,12 @@
 							<p><b><?php echo ucwords($row['target']) ?></b></p>
 			
 						</td>
-
+						<?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
+						<td>
+							<p><b><?php echo ucwords($row['entity_name']) ?></b></p>
+			
+						</td>	
+						<?php endif; ?>	
 						<td>
 							<p><b><?php echo ucwords(string: $row['date_created']) ?></b></p>
 			

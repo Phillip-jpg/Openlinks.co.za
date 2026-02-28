@@ -17,8 +17,8 @@ if ($login_id > 0) {
     if ($login_type == 2) {
         $notif_qry = $conn->query("
             SELECT DISTINCT nt.*,
-                CONCAT(u.firstname,' ',u.lastname) AS member,
-                IF(u.type = 3, 'Member', NULL) AS Role,
+                (SELECT CONCAT(us.firstname,' ',us.lastname) FROM users us WHERE us.id = nt.Member_ID LIMIT 1) AS member,
+                (SELECT IF(us.type = 3, 'Member', NULL) FROM users us WHERE us.id = nt.Member_ID LIMIT 1) AS Role,
                 pl.name AS Job_Name,
                 up.name AS activity_name,
                 c.company_name,
@@ -26,7 +26,6 @@ if ($login_id > 0) {
                 CONCAT(uc.firstname, ' ', uc.lastname) AS Manager_Created,
                 ts.team_name
             FROM pm_notifications nt
-            LEFT JOIN users u ON u.id = nt.Member_ID
             LEFT JOIN project_list pl ON pl.id = nt.Job_ID
             LEFT JOIN users u1 ON u1.id=pl.manager_id
             LEFT JOIN users uc ON uc.id = $login_id
@@ -43,21 +42,20 @@ if ($login_id > 0) {
     elseif ($login_type == 3) {
         $notif_qry = $conn->query("
             SELECT DISTINCT nt.*,
-                CONCAT(u.firstname, ' ', u.lastname) AS member,
+                (SELECT CONCAT(us.firstname, ' ', us.lastname) FROM users us WHERE us.id = nt.Member_ID LIMIT 1) AS member,
                 pl.name AS Job_Name,
                 up.name AS activity_name,
-                u.email AS member_email,
+                (SELECT us.email FROM users us WHERE us.id = nt.Member_ID LIMIT 1) AS member_email,
                 ts.team_name,
                 c.company_name,
                 CONCAT(u1.firstname, ' ', u1.lastname) AS Manager,
                 CONCAT(uc.firstname, ' ', uc.lastname) AS Manager_Created,
-                IF(u.type = 3, 'Member', NULL) AS Role
+                (SELECT IF(us.type = 3, 'Member', NULL) FROM users us WHERE us.id = nt.Member_ID LIMIT 1) AS Role
             FROM member_notifications nt
-            LEFT JOIN users u ON u.id = nt.Member_ID
             LEFT JOIN team_schedule ts ON ts.team_id = nt.team_id
             LEFT JOIN project_list pl ON pl.id = nt.Job_ID
             LEFT JOIN users u1 ON u1.id = pl.manager_id
-            LEFT JOIN users uc ON uc.id = u.creator_id
+            LEFT JOIN users uc ON uc.id = nt.PM_ID
             LEFT JOIN user_productivity up ON up.id = nt.Activity_ID
             LEFT JOIN yasccoza_openlink_market.client c ON pl.CLIENT_ID = c.CLIENT_ID
             WHERE nt.Member_ID = $login_id
@@ -161,7 +159,7 @@ if ($login_id > 0) {
                                             Job Name: <b>{$row['Job_Name']}</b><br>
                                             Team Assigned: {$row['team_name']}<br>
                                             Activity: {$row['activity_name']}<br>
-                                            Client: {$row['company_name']}";
+                                            Client: <b>{$row['company_name']}</b>";
                                         $notifLink = "index.php?page=priority_requests";
                                     }
                                     if ($login_type == 3) {
@@ -171,7 +169,7 @@ if ($login_id > 0) {
                                             Entity: <b>{$row['Manager']}</b><br>
                                             Team Assigned: {$row['team_name']}<br>
                                             Activity: {$row['activity_name']}<br>
-                                            Client: {$row['company_name']}";
+                                            Client: </b>{$row['company_name']} </b>";
                                         $notifLink = "index.php?page=my_progress";
                                     }
                                 }
@@ -194,7 +192,7 @@ if ($login_id > 0) {
                                             Job ID: <b>{$row['Job_ID']}</b><br>
                                             Job Name: <b>{$row['Job_Name']}</b><br>
                                             Activity: <b>{$row['activity_name']}</b><br>
-                                            Client: {$row['company_name']}";
+                                            Client: <b>{$row['company_name']}</b>";
                                         $notifLink = "index.php?page=my_progress";
                                     }
                                 }
@@ -216,7 +214,7 @@ if ($login_id > 0) {
                                             Job ID: <b>{$row['Job_ID']}</b><br>
                                             Job Name: <b>{$row['Job_Name']}</b><br>
                                             Entity: <b>{$row['Manager']}</b><br>
-                                            Client: {$row['company_name']}";
+                                            Client: <b>{$row['company_name']}</b>";
                                         $notifLink = "index.php?page=my_progress";
                                     }
                                 }
@@ -228,7 +226,7 @@ if ($login_id > 0) {
                                             Job ID: <b>{$row['Job_ID']}</b><br>
                                             Job Name: <b>{$row['Job_Name']}</b><br>
                                             Team Assigned: {$row['team_name']}<br>
-                                            Client: {$row['company_name']}";
+                                            Client: <b>{$row['company_name']}</b>";
                                         $notifLink = "index.php?page=job_archive";
                                     }
                                 }
@@ -238,7 +236,7 @@ if ($login_id > 0) {
                                     if ($login_type == 3) {
                                         $notifText = " Hi <b>{$row['member']} </b> welcome to <b>Openlinks </b> this notifications confirms that your member account has been successfully CREATED on our system and has been assigned to the following <br>
                                             Entity: <b>{$row['Manager_Created']}</b><br>
-                                            Role: <b>{$row['Role']}</b><br>";
+                                            Your Role: <b>{$row['Role']}</b><br>";
                                     }
                                 }
 
@@ -257,7 +255,7 @@ if ($login_id > 0) {
 		                                        $memberRole = !empty($row['Role']) ? $row['Role'] : 'Member';
 		                                        $notifText = "Hi <b>{$managerCreated}</b>, a new member has been created for your entity.<br>
 		                                            Member: <b>{$memberName}</b><br>
-		                                            Role: <b>{$memberRole}</b><br>";
+		                                            Thier Role: <b>{$memberRole}</b><br>";
 		                                        $notifLink = "index.php?page=user_list";
 		                                    }
 		                                }
@@ -268,7 +266,7 @@ if ($login_id > 0) {
                                         $notifText = " Hi <b>{$row['member']} </b> this notifications confirms that you have been sucessfully Added to a team the details are as follows <br>
                                             Team: <b>{$row['team_name']}</b><br>
                                             Entity: <b>{$row['Manager_Created']}</b><br>
-                                            Role: <b>{$row['Role']}</b><br>";
+                                            Your Role: <b>{$row['Role']}</b><br>";
                                     }
                                 }
 
@@ -311,6 +309,19 @@ if ($login_id > 0) {
 	                                        $teamName = !empty($row['team_name']) ? $row['team_name'] : 'your team';
 	                                        $notifText = "This notification confirms that <b>{$teamName}</b> has been scheduled to work.";
 	                                        $notifLink = "index.php?page=my_teams_progress_calendar";
+	                                    }
+	                                }
+
+	                                if ($row['Notification_Type'] == 466) {
+	                                    if ($login_type == 2) {
+	                                        $teamName = !empty($row['team_name']) ? $row['team_name'] : 'your team';
+	                                        $jobName = !empty($row['Job_Name']) ? $row['Job_Name'] : 'this job';
+	                                        $clientName = !empty($row['company_name']) ? $row['company_name'] : 'N/A';
+	                                        $notifText = "This notification confirms that <b>{$teamName}</b> has been fully assigned for the following job.<br>
+	                                            Job ID: <b>{$row['Job_ID']}</b><br>
+	                                            Job Name: <b>{$jobName}</b><br>
+	                                            Client: <b>{$clientName}</b>";
+	                                        $notifLink = "index.php?page=Productivity_Pipeline";
 	                                    }
 	                                }
 
@@ -552,6 +563,11 @@ if ($login_id > 0) {
     background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
     color: #22543d;
     border: 1px solid #68d391;
+}
+.notif-badge.type-14 { /* Fully Assigned */
+    background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+    color: #9a3412;
+    border: 1px solid #fb923c;
 }
 .notif-badge.type-13 { /* Orbit Notification */
     background: linear-gradient(135deg, #eef2ff 0%, #c7d2fe 100%);
@@ -849,6 +865,7 @@ $(document).ready(function() {
             case 12: return 12; // Entity Creation
             case 34: return 8;  // Team Assigned
             case 35: return 8;  // Team Assigned
+            case 466:return 14; // Fully Assigned
             case 111:return 13; // Orbit Notification
             case 222:return 13; // Orbit Notification
 
@@ -868,6 +885,7 @@ $(document).ready(function() {
             case 8: return 'Team Assigned';
             case 12: return 'Entity Creation';
             case 13: return 'Orbit Notification';
+            case 14: return 'Fully Assigned';
             case 50: return 'Member Creation';
             default: return 'Info';
         }

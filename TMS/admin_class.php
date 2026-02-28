@@ -352,6 +352,7 @@ class Action {
 function save_user(){
     extract($_POST);
     $idInt = !empty($id) ? (int)$id : 0;
+    $creator_id = (int)($_SESSION['login_id'] ?? 0);
 
     // --------- SECURITY: column allowlist (only columns that exist in users table) ----------
     $allowedCols = [
@@ -360,6 +361,26 @@ function save_user(){
     ];
 
     $data = "";
+    $existingUser = null;
+    $worktypeOnlyEdit = false;
+
+    if ($idInt > 0) {
+        $existingUserSql = "SELECT id, email, type, orbiter_id, creator_id FROM users WHERE id = {$idInt}";
+        if ((int)($_SESSION['login_type'] ?? 0) === 2 && $idInt !== $creator_id) {
+            $existingUserSql .= " AND creator_id = {$creator_id}";
+        }
+        $existingUserSql .= " ORDER BY date_created DESC LIMIT 1";
+        $existingUserQuery = $this->db->query($existingUserSql);
+        if ($existingUserQuery && $existingUserQuery->num_rows > 0) {
+            $existingUser = $existingUserQuery->fetch_assoc();
+        }
+
+        $worktypeOnlyEdit = ((int)($_SESSION['login_type'] ?? 0) === 2)
+            && !empty($existingUser)
+            && (int)($existingUser['type'] ?? 0) === 3
+            && (int)($existingUser['creator_id'] ?? 0) === $creator_id
+            && (int)($existingUser['orbiter_id'] ?? 0) !== 0;
+    }
 
     foreach($_POST as $k => $v){
         // skip excluded keys + numeric keys
@@ -367,6 +388,7 @@ function save_user(){
             continue;
         }
         if (is_numeric($k)) continue;
+        if ($worktypeOnlyEdit) continue;
         // Never allow role/type changes on existing users.
         if ($idInt > 0 && $k === 'type') continue;
 
@@ -380,13 +402,14 @@ function save_user(){
     }
 
     // Strong password hash
-    if(!empty($password)){
+    if(!$worktypeOnlyEdit && !empty($password)){
         $hashed = password_hash((string)$password, PASSWORD_DEFAULT);
         $hashed = $this->db->real_escape_string($hashed);
         $data .= ", password='$hashed' ";
     }
 
-    $emailSafe = $this->db->real_escape_string((string)$email);
+    $emailValue = isset($email) ? (string)$email : (string)($existingUser['email'] ?? '');
+    $emailSafe = $this->db->real_escape_string($emailValue);
 
     $checkSql = "SELECT 1 FROM users WHERE email ='$emailSafe' ".($idInt ? " AND id != {$idInt} " : "")." LIMIT 1";
     $check = $this->db->query($checkSql);
@@ -395,7 +418,7 @@ function save_user(){
     }
 
     // ---------- safer file upload ----------
-    if(isset($_FILES['img']) && !empty($_FILES['img']['tmp_name'])){
+    if(!$worktypeOnlyEdit && isset($_FILES['img']) && !empty($_FILES['img']['tmp_name'])){
         $tmp  = $_FILES['img']['tmp_name'];
         $name = (string)($_FILES['img']['name'] ?? '');
 
@@ -429,7 +452,6 @@ function save_user(){
     $industry_id = isset($industry_id) ? (int)$industry_id : 0;
 
     // Creator from session only (don’t trust POST)
-    $creator_id = (int)($_SESSION['login_id'] ?? 0);
     $backgroundEmailMemberId = 0;
     $backgroundEmailType = 0;
 
@@ -510,7 +532,7 @@ function save_user(){
             if(isset($task_ids) && is_array($task_ids)){
                 foreach ($task_ids as $task_id) {
                     $task_id = (int)$task_id;
-                    $insert_query = "INSERT INTO members_and_worktypes(member_id, work_type_id) VALUES ($new_id, $task_id)";
+                    $insert_query = "INSERT INTO members_and_worktypes(member_id, work_type_id, creator_id) VALUES ($new_id, $task_id, $creator_id)";
                     if(!$this->db->query($insert_query)){
                         throw new Exception("INSERT members_and_worktypes failed: ".$this->db->error);
                     }
@@ -877,7 +899,7 @@ function save_user(){
         } else {
 
             // admin_sector insert (keep your logic)
-            if($industry_id){
+            if(!$worktypeOnlyEdit && $industry_id){
                 $insert_sector = "
                     INSERT INTO yasccoza_openlink_admin_db.admin_sector(ADMIN_ID, OFFICE_ID, INDUSTRY_ID)
                     VALUES ($idInt, $OFFICE_ID, $industry_id)
@@ -888,14 +910,14 @@ function save_user(){
             }
 
             // reset pivot
-            if(!$this->db->query("DELETE FROM members_and_worktypes WHERE member_id = $idInt")){
+            if(!$this->db->query("DELETE FROM members_and_worktypes WHERE member_id = $idInt AND creator_id = $creator_id")){
                 throw new Exception("DELETE members_and_worktypes failed: ".$this->db->error);
             }
 
             if(isset($task_ids) && is_array($task_ids)){
                 foreach ($task_ids as $task_id) {
                     $task_id = (int)$task_id;
-                    $insert_query = "INSERT INTO members_and_worktypes(member_id, work_type_id) VALUES ($idInt, $task_id)";
+                    $insert_query = "INSERT INTO members_and_worktypes(member_id, work_type_id, creator_id) VALUES ($idInt, $task_id, $creator_id)";
                     if(!$this->db->query($insert_query)){
                         throw new Exception("INSERT members_and_worktypes failed: ".$this->db->error);
                     }
@@ -908,7 +930,12 @@ function save_user(){
             $data = preg_replace("/(^|,)\\s*type\\s*=\\s*'[^']*'\\s*/i", '$1 ', $data);
             $data = trim(preg_replace('/\\s+,\\s+/', ', ', $data), " ,");
 
-            $save = $this->db->query("UPDATE users SET $data WHERE id = $idInt");
+            $updateWhere = "id = $idInt AND creator_id = $creator_id";
+            if ($idInt === $creator_id) {
+                $updateWhere = "id = $idInt AND (creator_id = $creator_id OR type != 3)";
+            }
+
+            $save = $this->db->query("UPDATE users SET $data WHERE $updateWhere");
             if(!$save){
                 throw new Exception("UPDATE users failed: ".$this->db->error);
             }
@@ -2045,6 +2072,7 @@ function delete_discount() {
                         DATE_FORMAT(pl.start_date, '%d-%m-%Y') AS start_date_dmy,
                         DATE_FORMAT(pl.end_date, '%d-%m-%Y') AS end_date_dmy,
                         pl.JOB_TYPE,
+                        pl.task_ids,
                         s.Title,
                         u.email AS manager_email,
                         c.company_name,
@@ -2096,11 +2124,39 @@ function delete_discount() {
                 $team_name      = (string)$data['team_name'];
                 $scorecard      = (string)$data['Title'];
                 $jobtype        = (string)$data['JOB_TYPE'];
+                $task_ids_csv   = isset($data['task_ids']) ? trim((string)$data['task_ids']) : '';
                 $company_name   = (string)$data['company_name'];
                 $rep_name       = isset($data['REP_NAME']) ? (string)$data['REP_NAME'] : '';
                 $rep_email      = isset($data['REP_EMAIL']) ? (string)$data['REP_EMAIL'] : '';
                 $company_email  = isset($data['COMPANY_EMAIL']) ? (string)$data['COMPANY_EMAIL'] : '';
                 $date_submitted = (string)$data['submitted_date'];
+
+                $worktypes = 'N/A';
+                if ($task_ids_csv !== '' && $task_ids_csv !== '0') {
+                    $safeTaskIds = preg_replace('/[^0-9,]/', '', $task_ids_csv);
+                    if ($safeTaskIds !== '') {
+                        $workTypeQuery = $this->db->query("
+                            SELECT GROUP_CONCAT(DISTINCT task_name ORDER BY task_name SEPARATOR ', ') AS worktypes
+                            FROM task_list
+                            WHERE FIND_IN_SET(id, '{$safeTaskIds}')
+                        ");
+                        if ($workTypeQuery && $workTypeQuery->num_rows > 0) {
+                            $workTypeRow = $workTypeQuery->fetch_assoc();
+                            if (!empty($workTypeRow['worktypes'])) {
+                                $worktypes = (string)$workTypeRow['worktypes'];
+                            }
+                        }
+                    }
+                }
+
+                $clientRepDisplay = 'N/A';
+                if (trim($rep_name) !== '' && trim($rep_email) !== '') {
+                    $clientRepDisplay = $rep_name . ' (' . $rep_email . ')';
+                } elseif (trim($rep_name) !== '') {
+                    $clientRepDisplay = $rep_name;
+                } elseif (trim($rep_email) !== '') {
+                    $clientRepDisplay = $rep_email;
+                }
                 
                 /* -----------------------------
                    2) Build file section
@@ -2134,6 +2190,87 @@ function delete_discount() {
                         No documents attached
                     </div>";
                 }
+
+                $buildProjectMessage = static function (string $recipientName, string $extraNote = '') use (
+                    $projectId,
+                    $job_name,
+                    $start_date,
+                    $end_date,
+                    $company_name,
+                    $clientRepDisplay,
+                    $scorecard,
+                    $jobtype,
+                    $worktypes,
+                    $team_name,
+                    $manager_name,
+                    $date_submitted,
+                    $fileSection
+                ): string {
+                    $recipientName = htmlspecialchars(trim($recipientName) !== '' ? trim($recipientName) : 'Team Member', ENT_QUOTES, 'UTF-8');
+                    $job_name = htmlspecialchars($job_name, ENT_QUOTES, 'UTF-8');
+                    $start_date = htmlspecialchars($start_date, ENT_QUOTES, 'UTF-8');
+                    $end_date = htmlspecialchars($end_date, ENT_QUOTES, 'UTF-8');
+                    $company_name = htmlspecialchars($company_name, ENT_QUOTES, 'UTF-8');
+                    $clientRepDisplay = htmlspecialchars($clientRepDisplay, ENT_QUOTES, 'UTF-8');
+                    $scorecard = htmlspecialchars($scorecard, ENT_QUOTES, 'UTF-8');
+                    $jobtype = htmlspecialchars($jobtype, ENT_QUOTES, 'UTF-8');
+                    $worktypes = htmlspecialchars($worktypes, ENT_QUOTES, 'UTF-8');
+                    $team_name = htmlspecialchars($team_name, ENT_QUOTES, 'UTF-8');
+                    $manager_name = htmlspecialchars($manager_name, ENT_QUOTES, 'UTF-8');
+                    $date_submitted = htmlspecialchars($date_submitted, ENT_QUOTES, 'UTF-8');
+                    $extraNoteHtml = trim($extraNote) !== ''
+                        ? '<p>' . nl2br(htmlspecialchars(trim($extraNote), ENT_QUOTES, 'UTF-8')) . '</p>'
+                        : '';
+
+                    return "
+                    <!DOCTYPE html>
+                    <html><head><meta charset='UTF-8'><title>New Job Created</title></head>
+                    <body style='margin:0;padding:0;background-color:#f4f6f8;'>
+                    <table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f4f6f8;padding:30px 0;'><tr><td align='center'>
+                    <table width='600' cellpadding='0' cellspacing='0' style='background:#ffffff;border-radius:8px;overflow:hidden;font-family:Arial,sans-serif;'>
+                    <tr><td style='padding:20px;background:#0f1f3d;color:white;'>
+                    <table width='100%'><tr>
+                    <td align='left'><img src='https://openlinks.co.za/TMS/Image_Redone.png' height='80' width='200'></td>
+                    <td align='right' style='font-size:13px;line-height:18px;'>
+                    <b>OpenLinks Corporations (Pty) Ltd</b><br>314 Cape Road, Newton Park<br>Port Elizabeth, Eastern Cape 6070
+                    </td></tr></table></td></tr>
+
+                    <tr><td style='padding:30px;color:#333;font-size:15px;'>
+                    <p>Dear <b>{$recipientName}</b>,</p>
+                    <p>A new job has been created with the following details:</p>
+
+                    <table width='100%' cellpadding='8' cellspacing='0' style='border-collapse:collapse;font-size:14px;margin-top:15px;'>
+                    <tr><td style='background:#f0f3f7;width:35%;'><b>Job ID</b></td><td>{$projectId}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>Job Name</b></td><td>{$job_name}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>Start Date</b></td><td>{$start_date}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>End Date</b></td><td>{$end_date}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>Client</b></td><td>{$company_name}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>Client Rep</b></td><td>{$clientRepDisplay}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>Scorecard</b></td><td>{$scorecard}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>Job Type</b></td><td>{$jobtype}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>Work Types</b></td><td>{$worktypes}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>Team</b></td><td>{$team_name}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>Manager</b></td><td>{$manager_name}</td></tr>
+                    <tr><td style='background:#f0f3f7;'><b>Date Created</b></td><td>{$date_submitted}</td></tr>
+                    </table>
+
+                    {$extraNoteHtml}
+
+                    <div style='margin-top:25px;padding:15px;background:#f9fafc;border:1px solid #e1e5eb;border-radius:6px;'>
+                    <b>Attached Document:</b><br><br>{$fileSection}</div>
+
+                    <div style='text-align:center;margin:35px 0;'>
+                    <a href='https://openlinks.co.za/index.php?page=productivity_pipeline'
+                    style='background:#0f1f3d;color:#ffffff;padding:14px 30px;text-decoration:none;border-radius:5px;font-size:15px;font-weight:bold;'>
+                    View Job Pipeline</a></div>
+
+                    <p>Kind regards,<br><b>OpenLinks Operations System</b></p>
+                    </td></tr>
+
+                    <tr><td style='background:#f0f3f7;padding:15px;text-align:center;font-size:12px;'>
+                    <small>Automated Notification - Do not reply</small></td></tr>
+                    </table></td></tr></table></body></html>";
+                };
                 
                 /* -----------------------------
                    3) Get members & SEND FOR EACH MEMBER ✅
@@ -2152,6 +2289,8 @@ function delete_discount() {
                 $subject = "A Job Has Been Created : Job ID $projectId";
                 
                 $sent = []; // avoid duplicate emails (same email twice)
+                $repClientContact = trim($rep_name) !== '' ? $rep_name : 'the client representative';
+                $repClientNote = "We confirm that the current period's work order, placed by {$repClientContact}, has been successfully activated.\n\nFor traceability and reference purposes, the work order is registered under Job ID - {$projectId}.\nIt is currently positioned within the pipeline of our dedicated production teams and is progressing toward resource allocation. Once resources are assigned, the work order will transition into the formal production phase.\n\nPlease feel free to reference the Job ID in any related correspondence.";
                 
                 // ✅ SEND TO EACH MEMBER
                 if ($stmt && $stmt->num_rows > 0) {
@@ -2162,52 +2301,10 @@ function delete_discount() {
                 
                         if ($member_email === '' || isset($sent[$member_email])) continue;
                 
-                        $message_member = "
-                        <!DOCTYPE html>
-                        <html><head><meta charset='UTF-8'><title>New Job Created</title></head>
-                        <body style='margin:0;padding:0;background-color:#f4f6f8;'>
-                        <table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f4f6f8;padding:30px 0;'><tr><td align='center'>
-                        <table width='600' cellpadding='0' cellspacing='0' style='background:#ffffff;border-radius:8px;overflow:hidden;font-family:Arial,sans-serif;'>
-                        <tr><td style='padding:20px;background:#0f1f3d;color:white;'>
-                        <table width='100%'><tr>
-                        <td align='left'><img src='https://openlinks.co.za/TMS/Image_Redone.png' height='80' width='200'></td>
-                        <td align='right' style='font-size:13px;line-height:18px;'>
-                        <b>OpenLinks Corporations (Pty) Ltd</b><br>314 Cape Road, Newton Park<br>Port Elizabeth, Eastern Cape 6070
-                        </td></tr></table></td></tr>
-                
-                        <tr><td style='padding:30px;color:#333;font-size:15px;'>
-                        <p>Dear <b>$member_name</b>,</p>
-                        <p>A new job has been created with the following details:</p>
-                
-                        <table width='100%' cellpadding='8' cellspacing='0' style='border-collapse:collapse;font-size:14px;margin-top:15px;'>
-                        <tr><td style='background:#f0f3f7;width:35%;'><b>Job ID</b></td><td>$projectId</td></tr>
-                        <tr><td style='background:#f0f3f7;'><b>Job Name</b></td><td>$job_name</td></tr>
-                        <tr><td style='background:#f0f3f7;'><b>Start Date</b></td><td>$start_date</td></tr>
-                        <tr><td style='background:#f0f3f7;'><b>End Date</b></td><td>$end_date</td></tr>
-                        <tr><td style='background:#f0f3f7;'><b>Client</b></td><td>$company_name</td></tr>
-                        <tr><td style='background:#f0f3f7;'><b>Scorecard</b></td><td>$scorecard</td></tr>
-                        <tr><td style='background:#f0f3f7;'><b>Job Type</b></td><td>$jobtype</td></tr>
-                        <tr><td style='background:#f0f3f7;'><b>Team</b></td><td>$team_name</td></tr>
-                        <tr><td style='background:#f0f3f7;'><b>Manager</b></td><td>$manager_name</td></tr>
-                        <tr><td style='background:#f0f3f7;'><b>Date Created</b></td><td>$date_submitted</td></tr>
-                        </table>
-                
-                        <p>You can go into the system and assign yourself to the relevant task or inform your manager to assign you.</p>
-                
-                        <div style='margin-top:25px;padding:15px;background:#f9fafc;border:1px solid #e1e5eb;border-radius:6px;'>
-                        <b>Attached Document:</b><br><br>$fileSection</div>
-                
-                        <div style='text-align:center;margin:35px 0;'>
-                        <a href='https://openlinks.co.za/index.php?page=productivity_pipeline'
-                        style='background:#0f1f3d;color:#ffffff;padding:14px 30px;text-decoration:none;border-radius:5px;font-size:15px;font-weight:bold;'>
-                        View Job Pipeline</a></div>
-                
-                        <p>Kind regards,<br><b>OpenLinks Operations System</b></p>
-                        </td></tr>
-                
-                        <tr><td style='background:#f0f3f7;padding:15px;text-align:center;font-size:12px;'>
-                        <small>Automated Notification – Do not reply</small></td></tr>
-                        </table></td></tr></table></body></html>";
+                        $message_member = $buildProjectMessage(
+                            $member_name,
+                            'You can go into the system and assign yourself to the relevant task or inform your manager to assign you.'
+                        );
                 
                         $this->queueEmailJob($member_email, $subject, $message_member);
                         $sent[$member_email] = true;
@@ -2219,11 +2316,9 @@ function delete_discount() {
                 ------------------------------ */
                 $mgrEmail = strtolower(trim($manager_email));
                 if ($mgrEmail !== '' && !isset($sent[$mgrEmail])) {
-                
-                    $message_manager = str_replace(
-                        "Dear <b>$member_name</b>,",
-                        "Dear <b>$manager_name</b>,",
-                        $message_member // reuse the same template body (already contains all job info)
+                    $message_manager = $buildProjectMessage(
+                        $manager_name,
+                        'Please log in to review the job and assign work to the relevant team members.'
                     );
                 
                     $this->queueEmailJob($mgrEmail, $subject, $message_manager);
@@ -2233,29 +2328,32 @@ function delete_discount() {
                 /* -----------------------------
                    5) Send to client rep + company (once each)
                 ------------------------------ */
-                $baseMessage = isset($message_manager) && $message_manager !== ''
-                    ? $message_manager
-                    : (isset($message_member) ? $message_member : '');
-
                 $repEmail = strtolower(trim($rep_email));
-                if ($repEmail !== '' && !isset($sent[$repEmail]) && $baseMessage !== '') {
+                if ($repEmail !== '' && !isset($sent[$repEmail])) {
                     $repNameSafe = trim($rep_name) !== '' ? $rep_name : 'Client Representative';
-                    $message_rep = str_replace(
-                        "Dear <b>$manager_name</b>,",
-                        "Dear <b>$repNameSafe</b>,",
-                        $baseMessage
+                    $message_rep = $buildProjectMessage(
+                        $repNameSafe,
+                        $repClientNote
                     );
                     $this->queueEmailJob($repEmail, $subject, $message_rep);
                     $sent[$repEmail] = true;
                 }
 
                 $companyEmail = strtolower(trim($company_email));
-                if ($companyEmail !== '' && !isset($sent[$companyEmail]) && $baseMessage !== '') {
+                if ($companyEmail !== '' && !isset($sent[$companyEmail])) {
                     $companyRecipient = trim($company_name) !== '' ? $company_name : 'Client';
-                    $message_company = str_replace(
-                        "Dear <b>$manager_name</b>,",
-                        "Dear <b>$companyRecipient</b>,",
-                        $baseMessage
+                    $message_company = $buildProjectMessage(
+                        $companyRecipient,
+                        'We confirm that the current period’s work order, placed by [Representative Name], has been successfully activated.
+
+                                For traceability and reference purposes, the work order is registered under Job ID – [Insert ID]. 
+                                It is currently positioned within the pipeline of our dedicated production teams and is progressing toward resource allocation. Once resources are assigned, the work order will transition into the formal production phase.
+
+                                Please feel free to reference the Job ID in any related correspondence.'
+                    );
+                    $message_company = $buildProjectMessage(
+                        $companyRecipient,
+                        $repClientNote
                     );
                     $this->queueEmailJob($companyEmail, $subject, $message_company);
                     $sent[$companyEmail] = true;

@@ -58,7 +58,7 @@ FROM working_week_periods
                 <colgroup>
                     <col width="10%">
                      <col width="10%">
-                    <col width="45%">
+                    <col width="30%">
                     <col width="15%">
                     <col width="15%">
                     <col width="10%">
@@ -171,7 +171,7 @@ LEFT JOIN
 WHERE 
     m.POST_ID IN ($sanitized_ids)
 ORDER BY 
-    m.EXPIRY DESC;
+    m.POST_ID DESC;
                         ");
 
                         while ($row3 = $query3->fetch_assoc()):
@@ -235,7 +235,9 @@ ORDER BY
 
 <script>
     $(document).ready(function(){
-        var dataTable = $('#list').DataTable();
+        var dataTable = $('#list').DataTable({
+            order: [[0, 'desc']]
+        });
 
         $('#office-filter').change(function(){
             filterTable();

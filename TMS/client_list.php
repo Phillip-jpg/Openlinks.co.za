@@ -23,11 +23,14 @@ if (empty($_SESSION['csrf_token'])) {
         </div>
         <div class="card-body">
     	<table class="table table-hover table-bordered table-condensed" id="list">
-            	<thead style="background-color:#032033 !important; color:white">
+                <thead style="background-color:#032033 !important; color:white">
                     <tr>
                         <th class="text-center">#</th>
                         <th>Client_ID</th>
                         <th>Company Name</th>
+                        <?php if ($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
+                        <th>Entity</th>
+                        <?php endif; ?>
                         <th>Sector</th>
                         <th>Company Rep</th>
                         <th>City</th>
@@ -46,10 +49,13 @@ if (empty($_SESSION['csrf_token'])) {
                         $qry = $conn->query("
                             SELECT
                                 client.*,
+                                CONCAT(pm.firstname, ' ', pm.lastname) AS entity_name,
                                 title,
                                 office,
                                 GROUP_CONCAT(DISTINCT CONCAT('(', client_rep.REP_NAME, ')') ORDER BY client_rep.REP_NAME ASC) AS reps
                             FROM yasccoza_openlink_market.client
+                            LEFT JOIN users pm
+                                ON pm.id = yasccoza_openlink_market.client.creator_id
                             LEFT JOIN yasccoza_openlink_association_db.industry_title
                                 ON client.industry_id = industry_title.TITLE_ID
                             LEFT JOIN yasccoza_openlink_association_db.industry
@@ -66,10 +72,13 @@ if (empty($_SESSION['csrf_token'])) {
                         $qry = $conn->query("
                                      SELECT
                                 client.*,
+                                CONCAT(pm.firstname, ' ', pm.lastname) AS entity_name,
                                 title,
                                 office,
                                 GROUP_CONCAT(DISTINCT CONCAT('(', client_rep.REP_NAME, ')') ORDER BY client_rep.REP_NAME ASC) AS reps
                             FROM yasccoza_openlink_market.client
+                            LEFT JOIN users pm
+                                ON pm.id = yasccoza_openlink_market.client.creator_id
                             LEFT JOIN yasccoza_openlink_association_db.industry_title
                                 ON client.industry_id = industry_title.TITLE_ID
                             LEFT JOIN yasccoza_openlink_association_db.industry
@@ -88,10 +97,13 @@ if (empty($_SESSION['csrf_token'])) {
                         $qry = $conn->query("
                             SELECT
                                 client.*,
+                                CONCAT(pm.firstname, ' ', pm.lastname) AS entity_name,
                                 title,
                                 office,
                                 GROUP_CONCAT(DISTINCT CONCAT('(', client_rep.REP_NAME, ')') ORDER BY client_rep.REP_NAME ASC) AS reps
                             FROM yasccoza_openlink_market.client
+                            LEFT JOIN users pm
+                                ON pm.id = yasccoza_openlink_market.client.creator_id
                             LEFT JOIN yasccoza_openlink_association_db.industry_title
                                 ON client.industry_id = industry_title.TITLE_ID
                             LEFT JOIN yasccoza_openlink_association_db.industry
@@ -109,6 +121,9 @@ if (empty($_SESSION['csrf_token'])) {
                         <th class="text-center"><?php echo $i++ ?></th>
                         <td style="font-weight: lighter;"><b><?php echo $row['CLIENT_ID'] ?></b></td>
                         <td style="font-weight: lighter;"><b><?php echo $row['company_name'] ?></b></td>
+                        <?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
+                        <td style="font-weight: lighter;"><b><?php echo $row['entity_name'] ?: 'N/A' ?></b></td>
+                        <?php endif; ?>
                        
                         <td>Industry: <b><?php echo $row['title']; ?></b><br>Office: <b style="color:#007BFF"><?php echo $row['office']; ?></b></td>
                         <td style="font-weight: lighter;"><b><?php echo $row['reps'] ?></b></td>
@@ -120,7 +135,7 @@ if (empty($_SESSION['csrf_token'])) {
                                     Action
                                 </button>
                                 <div class="dropdown-menu">
-                                     <?php if($_SESSION['login_type'] == 4): ?>
+                                     <?php if($_SESSION['login_type'] == 4 || $_SESSION['login_type'] == 1 || $_SESSION['login_type'] == 3): ?>
                                     <a class="dropdown-item view_client" href="javascript:void(0)" data-id="<?php echo $row['CLIENT_ID'] ?>">View more info</a>
                                     <?php else: ?>
                                     <a class="dropdown-item view_client" href="javascript:void(0)" data-id="<?php echo $row['CLIENT_ID'] ?>">View more info</a>

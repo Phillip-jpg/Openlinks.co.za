@@ -76,11 +76,16 @@
 							<p><?php echo ucwords($row['Done']) ?></p>
 						</td>
 						<td class="text-center">
+							<?php
+							$teamPayload = (string)((int)$row['team_ids']);
+							$teamHash = hash_hmac('sha256', $teamPayload, 'my_app_secret_key');
+							$teamRef = urlencode(base64_encode($teamPayload . '|' . $teamHash));
+							?>
 							<button type="button" class="btn btn-default btn-sm btn-flat border-info wave-effect text-info dropdown-toggle" data-toggle="dropdown" aria-expanded="true">
 		                      Action
 		                    </button>
 		                    <div class="dropdown-menu" >
-		                      <a class="dropdown-item view_project" href="./index.php?page=jobs_to_manage_level1&team_id=<?php echo $row['team_ids'] ?>" data-id="<?php echo $row['team_ids'] ?>">View Jobs</a>
+		                      <a class="dropdown-item view_project" href="./index.php?page=jobs_to_manage_level1&team_id=<?php echo $teamRef ?>" data-id="<?php echo $row['team_ids'] ?>">View Jobs</a>
 		                      <hr>
 						    <a class="dropdown-item view_project" href="./index.php?page=team_efficiency_summary&team_id=<?php echo $row['team_id'] ?>">Team Efficiency Summary </a>
 						    <hr>

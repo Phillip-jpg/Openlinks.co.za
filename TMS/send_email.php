@@ -9,6 +9,12 @@ require 'PHPMailer/src/Exception.php';
 require 'PHPMailer/src/PHPMailer.php';
 require 'PHPMailer/src/SMTP.php';
 
+function logMailerStatus($line)
+{
+    $logFile = __DIR__ . DIRECTORY_SEPARATOR . 'email_worker.log';
+    @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] ' . $line . PHP_EOL, FILE_APPEND);
+}
+
 function buildConfiguredMailer()
 {
     $mail = new PHPMailer(true);
@@ -51,10 +57,12 @@ function sendEmailNotification($to, $subject, $htmlMessage)
         $mail->Body    = $htmlMessage;
 
         $mail->send();
+        logMailerStatus('SENT direct to ' . $to . ' | subject: ' . $subject);
         return true;
 
     } catch (Exception $e) {
         error_log("Email Error: " . $mail->ErrorInfo);
+        logMailerStatus('FAILED direct to ' . $to . ' | subject: ' . $subject . ' | error: ' . $mail->ErrorInfo);
 
         // Reset the cached mailer so next call re-connects cleanly.
         if ($mail !== null) {

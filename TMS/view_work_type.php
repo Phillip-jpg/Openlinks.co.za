@@ -69,6 +69,11 @@ $qry2 = $conn->query("SELECT SUM(resources) FROM user_productivity WHERE task_id
 
 
 <div class="col-lg-12">
+	<div class="mb-3">
+		<a href="./index.php?page=work_type" class="btn btn-primary btn-sm">
+			<i class="fa fa-arrow-left"></i> Back to Work Types
+		</a>
+	</div>
 	<div class="row">
 		<div class="col-md-12">
 			<div class="callout callout-info">

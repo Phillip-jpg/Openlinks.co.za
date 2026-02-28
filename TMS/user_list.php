@@ -203,10 +203,9 @@ ORDER BY name ASC;
 							<th style="width: 5%;">Name</th>
 							<th style="width: 5%;">Date Created</th>
 						    <th style="width: 5%;">Entity</th>
-							<th style="width: 5%;">Email</th>
+							<th style="width: 15%;">Email</th>
 							<th style="width: 5%;">Type</th>
 							<th style="width: 5%;">Work Types</th>
-							<th style="width: 5%;">Industries</th>
 							<th style="width: 5%;">Orbited</th>
 							
 							<th style="width: 5%;">Action</th>
@@ -248,15 +247,10 @@ ORDER BY name ASC;
                                   
                                     </td>
 									<td style="word-wrap: break-word;">
-										<?= splitEmail((string)($row['email'] ?? '')) ?>
+										<?= ((string)($row['email'] ?? '')) ?>
 									</td>
 									<td><?= e(userTypeLabel($row['type'] ?? 0)) ?></td>
 									<td><?= renderTaskNames($taskNames) ?></td>
-									<td>
-										Industry: <?= e((string)($row['titles'] ?? '')) ?><br>
-										Office: <b class="text-primary"><?= e((string)($row['offices'] ?? '')) ?></b>
-									</td>
-
 									<td><?= e(trim((string)($row['orbiter_id'] ?? 0)) !== '0' ? 'Yes' : 'No') ?></td>
 									
 									<td class="text-center">
@@ -274,11 +268,11 @@ ORDER BY name ASC;
 
 											<?php if ($loginType === 2): ?>
 												<div class="dropdown-divider"></div>
-												<?php if ($row['orbiter_id'] == 0): ?>
+											
 												<a class="dropdown-item" href="./index.php?page=edit_user&id=<?= e(urlencode($encoded)) ?>">
 													Edit
 												</a>
-												<?php endif; ?>
+											
 												<div class="dropdown-divider"></div>
 
 												<!-- <a class="dropdown-item delete_user" href="javascript:void(0)" data-id="<?= e((string)$userId) ?>">Delete</a> -->

@@ -129,12 +129,12 @@ try {
 
     // Insert each worktype mapping
     $mwStmt = $conn->prepare("
-        INSERT INTO members_and_worktypes (member_id, work_type_id)
-        VALUES (?, ?)
+        INSERT INTO members_and_worktypes (member_id, work_type_id, creator_id)
+        VALUES (?, ?, ?)
     ");
 
     foreach ($worktypes as $workTypeId) {
-        $mwStmt->bind_param("ii", $member_id, $workTypeId);
+        $mwStmt->bind_param("iii", $member_id, $workTypeId, $pm_id);
         if (!$mwStmt->execute()) {
             throw new RuntimeException("members_and_worktypes insert failed: " . $conn->error);
         }
@@ -310,7 +310,7 @@ try {
                 </p>
         
                 <p>
-                 We are sending this communication to ensure that: You are aware of the resource assignment. You can plan and allocate work accordingly. The member is managed within your entity’s operational processes
+                 We are sending this communication to ensure that: You are aware of the resource assignment. You can plan and allocate work accordingly. The member is managed within your entity operational processes
                 </p>
 
                 <div style='text-align:center;margin:35px 0;'>

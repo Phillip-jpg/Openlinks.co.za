@@ -52,6 +52,14 @@ if (!isset($conn)) {
             <h4 class="card-title">Teams</h4>
         </div>
         <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="entity-filter" class="font-weight-bold">Filter by Entity</label>
+                    <select id="entity-filter" class="form-control form-control-sm">
+                        <option value="">All Entities</option>
+                    </select>
+                </div>
+            </div>
             <table class="table table-hover table-bordered table-condensed" id="list">
                 <colgroup>
                     <col width="5%">
@@ -65,7 +73,7 @@ if (!isset($conn)) {
                         <th>Team_ID</th>
                         <th>Name of Team</th>
                         <th>Date Created</th>
-                        <th>PM</th>
+                        <th>Entity</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -185,7 +193,36 @@ if (!isset($conn)) {
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        $('#list').dataTable();
+        const dataTable = $('#list').DataTable({
+            order: [[0, 'asc']]
+        });
+
+        const entityFilter = document.getElementById('entity-filter');
+        if (entityFilter) {
+            const entityValues = [];
+            dataTable.column(3).data().each(function (value) {
+                const entity = $('<div>').html(value).text().trim();
+                if (entity !== '' && entityValues.indexOf(entity) === -1) {
+                    entityValues.push(entity);
+                }
+            });
+
+            entityValues.sort(function (a, b) {
+                return a.localeCompare(b);
+            });
+
+            entityValues.forEach(function (entity) {
+                const option = document.createElement('option');
+                option.value = entity;
+                option.textContent = entity;
+                entityFilter.appendChild(option);
+            });
+
+            entityFilter.addEventListener('change', function () {
+                const selectedEntity = $.fn.dataTable.util.escapeRegex(this.value);
+                dataTable.column(3).search(selectedEntity ? '^' + selectedEntity + '$' : '', true, false).draw();
+            });
+        }
 
         $('.delete_task').click(function () {
             _conf("Are you sure to delete this work type?", "delete_task", [$(this).attr('data-id')]);

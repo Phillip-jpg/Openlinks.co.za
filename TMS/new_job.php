@@ -234,7 +234,7 @@ if (isset($id) && !empty($id)) {
 	                        ON swt.Work_Team = ts_pm.team_id
 	                      WHERE ts_pm.team_members = $pmId
 	                        AND ts_me.team_members = {$_SESSION['login_id']}
-	                        AND CURDATE() BETWEEN swt.startweek AND swt.endweek;
+	                        AND '2026-02-27' BETWEEN swt.startweek AND swt.endweek;
 
 	                    ");
 	              
@@ -612,7 +612,7 @@ if (isset($id) && !empty($id)) {
     <div class="card-footer border-top border-info">
       <div class="d-flex w-100 justify-content-center align-items-center">
         <button class="btn btn-flat bg-gradient-primary mx-2" form="manage-project">Save</button>
-        <button class="btn btn-flat bg-gradient-secondary mx-2" type="button" onclick="location.href='index.php?page=job_list'">Cancel</button>
+        <button class="btn btn-flat bg-gradient-secondary mx-2" type="button" onclick="location.href='index.php?page=Productivity_Pipeline'">Back</button>
       </div>
     </div>
   </div>

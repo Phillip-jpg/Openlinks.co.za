@@ -187,7 +187,7 @@ endwhile;
                                 <th style="width:300px ! Important">Job_ID</th>
                                  <th>Month</th>
                                  <th>Team Name</th>
-                                  <th>Production Manager</th>
+                                  <th>Entity</th>
                                     <th>Team leader</th>
                                      <th>Client</th>
                                        <th>Activity</th>

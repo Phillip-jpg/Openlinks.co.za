@@ -28,6 +28,37 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 $crud = new Action();
 
+function finishAsyncResponse(string $body): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
+    ignore_user_abort(true);
+    @set_time_limit(0);
+
+    if (function_exists('fastcgi_finish_request')) {
+        echo $body;
+        @fastcgi_finish_request();
+        return;
+    }
+
+    @apache_setenv('no-gzip', '1');
+    @ini_set('zlib.output_compression', '0');
+    @ini_set('implicit_flush', '1');
+
+    header('Connection: close');
+    header('Content-Length: ' . strlen($body));
+
+    echo $body;
+
+    while (ob_get_level() > 0) {
+        @ob_end_flush();
+    }
+
+    @flush();
+}
+
 /* ---------------------------
    Action allowlist
 ---------------------------- */
@@ -183,59 +214,20 @@ switch ($action) {
 
     case 'save_project':
         $save = $crud->save_project();
-        echo $save;
+        $response = (string)$save;
 
-        if ((string)$save === '1') {
+        if ($response === '1') {
             $jobs = $crud->dequeueDeferredEmailJobs();
             if (!empty($jobs)) {
-                $queueFile = rtrim((string)sys_get_temp_dir(), DIRECTORY_SEPARATOR)
-                    . DIRECTORY_SEPARATOR
-                    . 'openlinks_email_queue_' . uniqid('', true) . '.json';
-
-                if (@file_put_contents($queueFile, json_encode($jobs), LOCK_EX) !== false) {
-                    $worker = __DIR__ . DIRECTORY_SEPARATOR . 'send_deferred_emails.php';
-                    $phpBin = PHP_BINARY ?: 'php';
-                    $spawned = false;
-
-                    // Under Apache/PHP-FPM, PHP_BINARY may be php-cgi; use php.exe for CLI worker.
-                    if (stripos(PHP_OS_FAMILY, 'Windows') === 0) {
-                        $base = strtolower(basename($phpBin));
-                        if ($base === 'php-cgi.exe' || $base === 'php-cgi') {
-                            $phpExe = dirname($phpBin) . DIRECTORY_SEPARATOR . 'php.exe';
-                            if (is_file($phpExe)) {
-                                $phpBin = $phpExe;
-                            }
-                        }
-                    }
-
-                    if (stripos(PHP_OS_FAMILY, 'Windows') === 0) {
-                        $cmd = 'cmd /c start "" /B "' . $phpBin . '" "' . $worker . '" "' . $queueFile . '"';
-                        $handle = @popen($cmd, 'r');
-                        if (is_resource($handle)) {
-                            @pclose($handle);
-                            $spawned = true;
-                        } elseif (function_exists('exec')) {
-                            @exec($cmd);
-                            $spawned = true;
-                        }
-                    } else {
-                        @exec(
-                            escapeshellarg($phpBin) . ' '
-                            . escapeshellarg($worker) . ' '
-                            . escapeshellarg($queueFile)
-                            . ' > /dev/null 2>&1 &'
-                        );
-                        $spawned = true;
-                    }
-
-                    // Fallback: send now if background spawn failed.
-                    if (!$spawned) {
-                        $crud->runEmailJobsNow($jobs);
-                        @unlink($queueFile);
-                    }
-                }
+                register_shutdown_function(static function () use ($crud, $jobs): void {
+                    $crud->runEmailJobsNow($jobs);
+                });
+                finishAsyncResponse($response);
+                exit;
             }
         }
+
+        echo $response;
         exit;
 
     case 'save_task_new':

@@ -16,92 +16,7 @@ if (!isset($conn)) {
     </style>
 </head>
 <body>
-<div class="container mt-5">
-    <div class="card card-outline card-primary">
-        <div class="card-header">
-            <h4>Add Team to Work Schedule</h4>
-        </div>
-        <div class="card-body">
-            <!-- Form for Managing Team Schedule -->
-            <form id="manage-schedule" action="./save_team_schedule.php" method="POST">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="team_id" class="control-label">Team</label>
-                            <select class="form-control form-control-sm select2" name="team_id" id="team_id" required>
-                                <option value="">Please select here</option>
-                                <?php
-                                $team = $conn->query("SELECT DISTINCT team_name, team_id FROM team_schedule WHERE pm_manager= {$_SESSION['login_id']}");
-                                while ($row = $team->fetch_assoc()): ?>
-                                    <option value="<?php echo $row['team_id']; ?>">
-                                        <?php echo ucwords($row['team_name']); ?>
-                                    </option>
-                                <?php endwhile; ?>
-                            </select>
-                        </div>
-                    </div>
-                    <?php if (isset($_GET['warning'])): ?>
-                        <div class="alert alert-warning">
-                            <?php echo htmlspecialchars($_GET['warning']); ?>
-                        </div>
-                    <?php endif; ?>
 
-                    <div class="col-md-6">
-                        <div class="form-group">
-                                <label for="period_ids" class="control-label">Period Weeks</label>
-
-                                   <select class="form-control form-control-sm select2"
-                                            multiple
-                                            name="period_ids[]"
-                                            id="period_ids"
-                                            required>
-                                    
-                                    <?php
-                                    $today = new DateTime();
-                                    
-                                    // Start at CURRENT ISO week (Monday)
-                                    $week = new DateTime();
-                                    $week->setISODate(
-                                        (int)$today->format('o'),
-                                        (int)$today->format('W')
-                                    );
-                                    
-                                    // CURRENT week + 51 following weeks = 52 total
-                                    for ($i = 0; $i < 52; $i++) {
-                                    
-                                        $start = clone $week;      // Monday
-                                        $end   = clone $week;
-                                        $end->modify('+4 days');   // Friday
-                                    
-                                        // Store REAL dates in value
-                                        $value = $start->format('Y-m-d') . '|' . $end->format('Y-m-d');
-                                    
-                                        // User-friendly label
-                                        $label = $start->format('d M Y') . ' - ' . $end->format('d M Y');
-                                    
-                                        echo "<option value=\"$value\">$label</option>";
-                                    
-                                        // Move to next week
-                                        $week->modify('+1 week');
-                                    }
-                                    ?>
-                                    </select>
-
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer border-top border-info mt-3">
-                    <div class="d-flex w-100 justify-content-center align-items-center">
-                        <!-- Save Button -->
-                        <button id="btn-save" class="btn btn-flat bg-gradient-primary mx-2" type="submit" style="color:white">Save</button>
-                        <!-- Cancel Button -->
-                        <button class="btn btn-flat bg-gradient-secondary mx-2" style="color:white" type="button" onclick="location.href='index.php?page=schedule_teams_lvl2'">Cancel</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <div class="col-lg-12">
 	<div class="card card-outline card-success shadow-sm">
@@ -159,7 +74,7 @@ if (!isset($conn)) {
 						<th>Start Date Cycles</th>
 						<th>End Date Cycles</th>
 						<th>Week</th>
-						<th>PM</th>
+						<th>Entity</th>
 					    <th>Team_Name</th>
 						<th>Members</th>
 						<th>Action</th>
@@ -169,6 +84,7 @@ if (!isset($conn)) {
 					<?php
 					$work_qry = $conn->query("SELECT
                     MONTHNAME(swt.startweek) AS Month,
+                    MONTH(swt.startweek) AS month_number,
                     swt.id,
                     swt.startweek AS start_date,
                     swt.endweek AS end_date,
@@ -189,11 +105,13 @@ if (!isset($conn)) {
                 WHERE 
                     swt.Time_Scheduled IS NOT NULL
                     AND ts.team_name IS NOT NULL
-                    AND ts.pm_manager = {$_SESSION['login_id']}
                     AND swt.Activated = 0
+                    AND ts.team_members ={$_SESSION['login_id']}
                 GROUP BY 
                     swt.id, ts.team_name, u.id, swt.Time_Scheduled
                 ORDER BY 
+                    MONTH(swt.startweek) ASC,
+                    swt.startweek ASC,
                     swt.Time_Scheduled ASC;
 
                             ");
@@ -201,7 +119,7 @@ if (!isset($conn)) {
 					?>
 					<tr>
 					    <td><p><?php echo ucwords($row['Date_Scheduled']) ?></p></td>
-						<td><p><?php echo ucwords($row['Month']) ?></p></td>
+						<td data-order="<?php echo (int)$row['month_number']; ?>"><p><?php echo ucwords($row['Month']) ?></p></td>
 						<td><p><?php echo ucwords($row['start_date']) ?></p></td>
 						<td><p><?php echo ucwords($row['end_date']) ?></p></td>
 						<td><p><?php echo ucwords($row['period']) ?></p>
@@ -268,11 +186,9 @@ if (!isset($conn)) {
 <!-- Script to initialize DataTables and handle deletion -->
 <script>
 $(document).ready(function(){
-    var dataTable = $('#list').DataTable();
-
-    function escapeRegex(value) {
-        return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
+    var dataTable = $('#list').DataTable({
+        order: [[1, 'asc'], [2, 'asc']]
+    });
 
     function addOptions($select, values) {
         values.forEach(function(value) {
@@ -291,7 +207,7 @@ $(document).ready(function(){
     function uniqueSortedColumnValues(columnIndex) {
         var seen = {};
         return dataTable.column(columnIndex).data().toArray().map(function(value) {
-            return $('<div>').html(value).text().trim();
+            return normalizeCell(value);
         }).filter(function(value) {
             if (value === '' || seen[value]) {
                 return false;
@@ -308,7 +224,8 @@ $(document).ready(function(){
         var members = [];
 
         dataTable.column(7).data().toArray().forEach(function(value) {
-            $('<div>').html(value).text().split('\n').forEach(function(member) {
+            $('<div>').html(value).find('span').each(function() {
+                var member = $(this).text();
                 var cleanMember = member.trim();
                 if (cleanMember === '') {
                     return;
@@ -323,6 +240,10 @@ $(document).ready(function(){
         return members.sort(function(a, b) {
             return a.localeCompare(b, undefined, { sensitivity: 'base' });
         });
+    }
+
+    function normalizeCell(value) {
+        return $('<div>').html(value || '').text().replace(/\s+/g, ' ').trim();
     }
 
     addOptions($('#month-filter'), uniqueSortedColumnValues(1));
@@ -340,10 +261,10 @@ $(document).ready(function(){
         var selectedTeam = $('#team-filter').val();
         var selectedMember = $('#member-filter').val();
 
-        var monthValue = (data[1] || '').trim();
-        var weekValue = (data[4] || '').trim();
-        var teamValue = (data[6] || '').trim();
-        var memberValue = (data[7] || '').toLowerCase();
+        var monthValue = normalizeCell(data[1]);
+        var weekValue = normalizeCell(data[4]);
+        var teamValue = normalizeCell(data[6]);
+        var memberValue = normalizeCell(data[7]).toLowerCase();
 
         if (selectedMonth && monthValue !== selectedMonth) {
             return false;
@@ -365,11 +286,7 @@ $(document).ready(function(){
     });
 
     $('#month-filter, #week-filter, #team-filter, #member-filter').on('change', function(){
-        dataTable
-            .column(1).search($('#month-filter').val() ? '^' + escapeRegex($('#month-filter').val()) + '$' : '', true, false)
-            .column(4).search($('#week-filter').val() ? '^' + escapeRegex($('#week-filter').val()) + '$' : '', true, false)
-            .column(6).search($('#team-filter').val() ? '^' + escapeRegex($('#team-filter').val()) + '$' : '', true, false)
-            .draw();
+        dataTable.draw();
     });
 
     // Handle deletion of projects

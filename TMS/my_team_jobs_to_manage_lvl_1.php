@@ -2,6 +2,9 @@
 
 
 <div class="col-lg-12">
+	<div class="mb-3">
+		<a href="./index.php?page=my_team_jobs_to_manage" class="btn btn-primary btn-sm">Back to My Team Jobs To Manage</a>
+	</div>
 		<div class="card card-outline card-success shadow-sm">
 		<div class="card-header bg-primary text-white">
 	
@@ -117,23 +120,46 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 					
 					 $login_id = $_SESSION['login_id'];
 					
-					$team_id = htmlspecialchars($_GET['team_id']);
+					$team_id = 0;
+					if (isset($_GET['team_id'])) {
+						$rawTeamId = (string)$_GET['team_id'];
+						if (ctype_digit($rawTeamId)) {
+							$team_id = (int)$rawTeamId;
+						} else {
+							$decodedTeamId = base64_decode($rawTeamId, true);
+							if ($decodedTeamId !== false) {
+								$teamParts = explode('|', $decodedTeamId, 2);
+								if (count($teamParts) === 2) {
+									list($teamPayload, $teamHash) = $teamParts;
+									$expectedTeamHash = hash_hmac('sha256', $teamPayload, 'my_app_secret_key');
+									if (hash_equals($expectedTeamHash, $teamHash) && ctype_digit($teamPayload)) {
+										$team_id = (int)$teamPayload;
+									}
+								}
+							}
+						}
+					}
                            
                             $total_jobs_done = 0;
                             $total_jobs_inprogress=0;
                             $qry = $conn->query("SELECT DISTINCT
                                 pl.*,
+                                CONCAT(u.firstname, ' ', u.lastname) AS c_name,
+                                wwp.month AS period_month,
                                 ts.team_id,
                                 ts.team_name
                             FROM
-                                project_list pl,
-                                team_schedule ts
+                                project_list pl
+                            LEFT JOIN team_schedule ts ON ts.team_id = pl.team_ids
+                            LEFT JOIN users u ON u.id = pl.Creator_ID
+                            LEFT JOIN working_week_periods wwp
+                                ON pl.date_created >= wwp.start_week
+                                AND pl.date_created <= wwp.end_week
                             WHERE
-                            ts.team_id=pl.team_ids
-                            AND pl.team_ids = $team_id
+                            pl.team_ids = $team_id
                             AND pl.manager_id = $login_id
                             ORDER BY
-                                pl.team_ids ASC;
+                                pl.id DESC;
                         ");
                         
         
@@ -178,7 +204,7 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 							
 						</td>
                         <td>
-							<p><b><?php echo ucwords($row['date_created']) ?></b></p>
+							<p><b><?php echo ucwords($row['date_created']) ?></b><span class="d-none"><?php echo htmlspecialchars((string)$row['period_month'], ENT_QUOTES, 'UTF-8') ?></span></p>
 							
 						</td>
 						<td>
@@ -224,11 +250,17 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 							
 
 						<td class="text-center">
+							<?php
+							$jobPayload = (string)((int)$row['id']);
+							$jobHash = hash_hmac('sha256', $jobPayload, 'my_app_secret_key');
+							$jobRef = urlencode(base64_encode($jobPayload . '|' . $jobHash));
+							$backTeamRef = isset($_GET['team_id']) ? urlencode((string)$_GET['team_id']) : '';
+							?>
 							<button type="button" class="btn btn-default btn-sm btn-flat border-info wave-effect text-info dropdown-toggle" data-toggle="dropdown" aria-expanded="true">
 		                      Action
 		                    </button>
 		                    <div class="dropdown-menu" >
-		                      <a class="dropdown-item view_project" href="./index.php?page=view_job&id=<?php echo $row['id'] ?>" data-id="<?php echo $row['id'] ?>">View</a>
+		                      <a class="dropdown-item view_project" href="./index.php?page=view_job&job=<?php echo $jobRef ?>&back=my_team_jobs_to_manage_lvl_1<?php echo $backTeamRef !== '' ? '&back_team=' . $backTeamRef : '' ?>" data-id="<?php echo $row['id'] ?>">View</a>
 		                      
 							<?php if($_SESSION['login_type'] ==2): ?>
 						
@@ -279,7 +311,9 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 <script>
 $(document).ready(function(){
     // Initialize DataTable
-    var dataTable = $('#list').DataTable();
+    var dataTable = $('#list').DataTable({
+        order: [[0, 'desc']]
+    });
 
     // Event listener for each filter dropdown
     $('#jobtype-filter').change(function(){
@@ -311,11 +345,11 @@ $(document).ready(function(){
         var selectedStatus = $('#status-filter').val();
 
         // Apply filter for each column:
-        dataTable.column(2).search(selectedJobType) 
-         dataTable.column(3).search(selectedmonth) /// Job Type filter on 3rd column (index 2)
-            .column(4).search(selectedCreator)      // Who Created it filter on 5th column (index 4)
-            .column(5).search(selectedAssigned)     // Assigned filter on 6th column (index 5)
-            .column(6).search(selectedStatus)       // Status filter on 7th column (index 6)
+        dataTable.column(2).search(selectedJobType)
+            .column(4).search(selectedmonth)
+            .column(7).search(selectedCreator)
+            .column(8).search(selectedAssigned)
+            .column(9).search(selectedStatus)
             .draw();  // Redraw the table with the new filters
     }
 
@@ -325,10 +359,8 @@ $(document).ready(function(){
 
 
 	$(document).ready(function(){
-		$('#list').dataTable()
-	
 	$('.delete_project').click(function(){
-	_conf("Are you sure to delete this job?","delete_project",[$(this).attr('data-id')])
+		_conf("Are you sure to delete this job?","delete_project",[$(this).attr('data-id')])
 	})
 	})
 	function delete_project($id){

@@ -31,12 +31,18 @@
 					<col width="15%">
 					<col width="10%">
 					<col width="10%">
+					<?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
+					<col width="10%">
+						<?php endif; ?>
 				</colgroup>
 				<thead style="background-color:#032033 !important; color:white">
 					<tr>
 						<th>Job Type ID</th>
 						<th>Job Type Name</th>
 						<th>Description</th>
+						<?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
+						<th>Entity</th>
+						<?php endif; ?>
 						<th>Date Created</th>
 						<th>Action</th>
 					</tr>
@@ -51,14 +57,22 @@
 				    }elseif($_SESSION['login_type']==3){
 				        
 				        $qry = $conn->query("
-								SELECT jt.*
+								SELECT
+									jt.*,
+									CONCAT(pm.firstname, ' ', pm.lastname) AS entity_name
 								FROM job_type jt
 								JOIN users u ON u.id = {$_SESSION['login_id']}
+								JOIN users pm ON pm.id = jt.creator_id
 								WHERE jt.creator_id = u.creator_id
 								");
 				        
 				    }else{
-				        	$qry = $conn->query("SELECT * FROM job_type");
+				        	$qry = $conn->query("
+								SELECT jt.*, CONCAT(pm.firstname, ' ', pm.lastname) AS entity_name
+								FROM job_type jt
+								LEFT JOIN users pm ON pm.id = jt.creator_id
+								ORDER BY jt.id ASC
+							");
 				    }
 				    
 
@@ -80,6 +94,12 @@
                         <p><b><?php echo html_entity_decode($row['description']) ?></b></p>
 			
 						</td>
+						<?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
+						<td>
+                        <p><b><?php echo ucwords($row['entity_name']) ?></b></p>
+			
+						</td>
+						<?php endif; ?>
 
 						<td>
                         <p><b><?php echo html_entity_decode($row['date_created']) ?></b></p>

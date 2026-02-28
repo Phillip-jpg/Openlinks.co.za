@@ -1,6 +1,40 @@
 <?php
 // Include the database connection file
 include 'db_connect.php';
+
+function finishAsyncResponse(string $body): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
+    ignore_user_abort(true);
+    @set_time_limit(0);
+
+    if (function_exists('fastcgi_finish_request')) {
+        echo $body;
+        @fastcgi_finish_request();
+        return;
+    }
+
+    @apache_setenv('no-gzip', '1');
+    @ini_set('zlib.output_compression', '0');
+    @ini_set('implicit_flush', '1');
+
+    header('Connection: close');
+    header('Content-Length: ' . strlen($body));
+
+    echo $body;
+
+    while (ob_get_level() > 0) {
+        @ob_end_flush();
+    }
+
+    @flush();
+}
+
+$isAjaxRequest = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+$emailJobs = [];
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     // Check if the necessary POST parameters are set
@@ -236,7 +270,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             </body>
                             </html>
                     ";
-                    sendEmailNotification("$pm_email", $subject, $pmMessage);
+                    if (!empty($pm_email)) {
+                        $emailJobs[] = [
+                            'to' => (string)$pm_email,
+                            'subject' => (string)$subject,
+                            'message' => (string)$pmMessage
+                        ];
+                    }
                     
                     // ---------------------------
                     // MEMBER EMAIL
@@ -337,11 +377,42 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </html>
                     ";
                     
-                    sendEmailNotification("$member_email", $memberSubject, $memberMessage);
+                    if (!empty($member_email)) {
+                        $emailJobs[] = [
+                            'to' => (string)$member_email,
+                            'subject' => (string)$memberSubject,
+                            'message' => (string)$memberMessage
+                        ];
+                    }
                 }
         
 
         if ($conn->query($updateQuery) === TRUE) {
+            if (!empty($emailJobs)) {
+                register_shutdown_function(static function () use ($emailJobs): void {
+                    include_once 'send_email.php';
+                    if (!function_exists('sendEmailNotification')) {
+                        return;
+                    }
+
+                    foreach ($emailJobs as $job) {
+                        $to = trim((string)($job['to'] ?? ''));
+                        $subject = (string)($job['subject'] ?? '');
+                        $message = (string)($job['message'] ?? '');
+
+                        if ($to === '' || $subject === '' || $message === '') {
+                            continue;
+                        }
+
+                        sendEmailNotification($to, $subject, $message);
+                    }
+                });
+            }
+
+            if ($isAjaxRequest) {
+                finishAsyncResponse("OK");
+                exit;
+            }
             
             echo "<p style='color:red; font-size:20px; font-weight:bold'>Data saved successfully ! </p>";
             
@@ -360,11 +431,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         } else {
             // Handle database update error
+            if ($isAjaxRequest) {
+                http_response_code(500);
+                echo "Error updating data: " . $conn->error;
+                exit;
+            }
             echo "Error updating data: " . $conn->error . "<br>";
         }
     } else {
         // Handle missing or incomplete POST parameters
+        if ($isAjaxRequest) {
+            http_response_code(400);
+            echo "Error: Missing or incomplete parameters.";
+            exit;
+        }
         echo "Error: Missing or incomplete parameters.<br>";
     }
 }
-

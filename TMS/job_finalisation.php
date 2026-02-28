@@ -61,7 +61,7 @@ $result = null; // Initialize the $result variable
         <div class="card-body">
             
 
-        <form id="manage-days" method="post" action="./index.php?page=save_request">
+        <form id="manage-days" method="post" action="./save_request.php">
                 <input type="hidden" name="project_id" value="<?php echo isset($projectId) ? $projectId : '' ?>">
                 <input type="hidden" name="activity_id" value="<?php echo isset($activityId) ? $activityId : '' ?>">
                 <input type="hidden" name="login_id" value="<?php echo isset($_SESSION['login_id']) ? $_SESSION['login_id'] : '' ?>">
@@ -125,7 +125,7 @@ $result = null; // Initialize the $result variable
         </div>
         <div class="card-footer border-top border-info">
             <div class="d-flex w-100 justify-content-center align-items-center">
-                <button class="btn btn-flat bg-gradient-primary mx-2" type="submit" form="manage-days">Save</button>
+                <button class="btn btn-flat bg-gradient-primary mx-2" type="submit" form="manage-days" id="request-save-btn">Save</button>
                 <?php
                 if (!empty($period)) {
                     echo '<button class="btn btn-flat bg-gradient-secondary mx-2" type="button" onclick="location.href=\'index.php?page=my_progress_period&p=' . $period . '&w=' . $where . '\'">Back</button>';
@@ -136,7 +136,76 @@ $result = null; // Initialize the $result variable
                 }
                 ?>
             </div>
+            <div id="request-save-status" class="mt-3" style="display:none;"></div>
         </div>
     </div>
 </div>
 
+<script>
+$(document).ready(function () {
+    var $form = $('#manage-days');
+    var $saveBtn = $('#request-save-btn');
+    var $status = $('#request-save-status');
+    var saveLabel = $saveBtn.text();
+
+    function setSaveState(isSaving, label) {
+        $saveBtn.prop('disabled', isSaving);
+        $saveBtn.text(label);
+    }
+
+    $form.on('submit', function (e) {
+        e.preventDefault();
+
+        setSaveState(true, 'Saving...');
+        $status.hide().removeClass('alert alert-success alert-danger').text('');
+
+        if (typeof start_load === 'function') {
+            start_load();
+        }
+
+        $.ajax({
+            url: $form.attr('action'),
+            method: 'POST',
+            data: $form.serialize(),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            timeout: 45000,
+            success: function (resp) {
+                var cleanResp = $.trim(String(resp || ''));
+
+                if (cleanResp === 'OK') {
+                    $status.addClass('alert alert-success').text('Request saved successfully.').show();
+                    if (typeof alert_toast === 'function') {
+                        alert_toast('Request saved successfully.', 'success');
+                    }
+                    setSaveState(true, 'Saved');
+                    $form.find('input, textarea, select').not(':hidden').prop('disabled', true);
+                } else {
+                    $status.addClass('alert alert-danger').text(cleanResp || 'Save failed.').show();
+                    if (typeof alert_toast === 'function') {
+                        alert_toast(cleanResp || 'Save failed.', 'danger');
+                    }
+                    setSaveState(false, saveLabel);
+                }
+            },
+            error: function (xhr, status) {
+                var message = status === 'timeout'
+                    ? 'Save timed out. Please try again.'
+                    : $.trim(String(xhr.responseText || 'Request failed.'));
+
+                $status.addClass('alert alert-danger').text(message).show();
+                if (typeof alert_toast === 'function') {
+                    alert_toast(message, 'danger');
+                }
+                setSaveState(false, saveLabel);
+            },
+            complete: function () {
+                if (typeof end_load === 'function') {
+                    end_load();
+                }
+            }
+        });
+    });
+});
+</script>

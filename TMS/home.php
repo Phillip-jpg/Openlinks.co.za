@@ -45,14 +45,14 @@ if ($_SESSION['login_type'] == 1 || $_SESSION['login_type'] == 4) {
     $query = "SELECT * FROM project_list ORDER BY id DESC LIMIT $itemsPerPage OFFSET $offset";
     $totalQuery = "SELECT COUNT(*) as total FROM project_list";
 } elseif ($_SESSION['login_type'] == 2) {
-    $query = "SELECT * FROM project_list WHERE manager_id = {$_SESSION['login_id']} ORDER BY date_created DESC LIMIT $itemsPerPage OFFSET $offset";
+    $query = "SELECT * FROM project_list WHERE manager_id = {$_SESSION['login_id']} ORDER BY id DESC LIMIT $itemsPerPage OFFSET $offset";
     $totalQuery = "SELECT COUNT(*) as total FROM project_list WHERE manager_id = {$_SESSION['login_id']}";
 } else {
     $query = "SELECT DISTINCT project_list.*
               FROM project_list
               INNER JOIN assigned_duties ON project_list.id = assigned_duties.project_id
               WHERE assigned_duties.user_id = {$_SESSION['login_id']}
-              ORDER BY date_created DESC LIMIT $itemsPerPage OFFSET $offset";
+              ORDER BY id DESC LIMIT $itemsPerPage OFFSET $offset";
     $totalQuery = "SELECT COUNT(DISTINCT project_list.id) as total
                    FROM project_list
                    INNER JOIN assigned_duties ON project_list.id = assigned_duties.project_id
@@ -120,7 +120,7 @@ $login_id = $_SESSION['login_id'];
                                 $jobPayload = (string) ((int) $row['id']);
                                 $jobHash = hash_hmac('sha256', $jobPayload, 'my_app_secret_key');
                                 $jobToken = base64_encode($jobPayload . '|' . $jobHash);
-                                echo "<td><a class='btn btn-primary btn-sm' href='./index.php?page=view_job&job=" . urlencode($jobToken) . "'><i class='fas fa-folder'></i> View</a></td>";
+                                echo "<td><a class='btn btn-primary btn-sm' href='./index.php?page=view_job&job=" . urlencode($jobToken) . "&back=home'><i class='fas fa-folder'></i> View</a></td>";
                                 echo "</tr>";
                                 $count++;
                             }

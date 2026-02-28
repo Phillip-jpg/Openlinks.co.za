@@ -26,3 +26,19 @@
 [2026-02-24 22:53:48] member email send to supportteam@openlinks.co.za result=ok
 [2026-02-24 22:53:51] main admin email send to system@openlinks.co.za result=ok
 [2026-02-24 22:53:51] done
+[2026-02-28 10:57:33] start: member_id=2, type=2
+[2026-02-28 10:57:35] member email send to phillipsibanda711@gmail.com result=ok
+[2026-02-28 10:57:36] main admin email send to system@openlinks.co.za result=ok
+[2026-02-28 10:57:36] done
+[2026-02-28 11:02:25] start: member_id=3, type=3
+[2026-02-28 11:02:26] member email send to s220888914@mandela.ac.za result=ok
+[2026-02-28 11:02:26] manager email send to phillipsibanda711@gmail.com result=ok
+[2026-02-28 11:02:26] done
+[2026-02-28 11:28:20] start: member_id=4, type=3
+[2026-02-28 11:28:21] member email send to phillipsibs@outlook.com result=ok
+[2026-02-28 11:28:21] manager email send to phillipsibanda711@gmail.com result=ok
+[2026-02-28 11:28:21] done
+[2026-02-28 16:51:18] start: member_id=5, type=2
+[2026-02-28 16:51:19] member email send to phillipsibanda12@yahoo.com result=ok
+[2026-02-28 16:51:19] main admin email send to system@openlinks.co.za result=ok
+[2026-02-28 16:51:19] done

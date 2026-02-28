@@ -7,6 +7,21 @@ if (empty($_SESSION['csrf_token'])) {
   $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
+$isEditMode = !empty($id);
+$recordCreatorId = isset($creator_id) ? (int)$creator_id : 0;
+$currentUserType = isset($type) ? (int)$type : 0;
+$currentOrbiterId = isset($row['orbiter_id']) ? (int)$row['orbiter_id'] : (isset($orbiter_id) ? (int)$orbiter_id : 0);
+$isEntityLogin = ((int)($_SESSION['login_type'] ?? 0) === 2);
+$worktypeOnlyEdit = (
+    $isEntityLogin
+    && $isEditMode
+    && $currentUserType === 3
+    && $currentOrbiterId !== 0
+    && $recordCreatorId === (int)($_SESSION['login_id'] ?? 0)
+);
+$fieldReadonly = $worktypeOnlyEdit ? 'readonly' : '';
+$fieldDisabled = $worktypeOnlyEdit ? 'disabled' : '';
+
 ?>
 <div class="col-lg-12">
 	<div class="card">
@@ -17,7 +32,15 @@ if (empty($_SESSION['csrf_token'])) {
 				<input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
 				<div class="row">
+						<?php if ($worktypeOnlyEdit): ?>
+						<div class="col-12">
+							<div class="alert alert-info">
+								This orbited member can only have work types updated by this entity.
+							</div>
+						</div>
+						<?php endif; ?>
 					<div class="col-md-6 border-right">
+						<?php if ($currentOrbiterId === 0): ?>
 					<div class="form-group">
 							<label for="" class="control-label">Offices</label>
 							<select name="OFFICE_ID" id="offices" class="custom-select custom-select-sm">
@@ -33,20 +56,21 @@ if (empty($_SESSION['csrf_token'])) {
 								<option value="9">Office of International Corporate Finance</option>
 								
 							</select>
-						</div> 	
+						</div>
+						<?php endif; ?>
 						
 						<div class="form-group">
 							<label for="" class="control-label">First Name/Entity</label>
-							<input type="text" name="firstname" class="form-control form-control-sm" required value="<?php echo isset($firstname) ? $firstname : '' ?>">
+							<input type="text" name="firstname" class="form-control form-control-sm" required value="<?php echo isset($firstname) ? $firstname : '' ?>" <?php echo $fieldReadonly; ?>>
 						</div>
 						<div class="form-group">
 							<label for="" class="control-label">Last Name/Function</label>
-							<input type="text" name="lastname" class="form-control form-control-sm" required value="<?php echo isset($lastname) ? $lastname : '' ?>">
+							<input type="text" name="lastname" class="form-control form-control-sm" required value="<?php echo isset($lastname) ? $lastname : '' ?>" <?php echo $fieldReadonly; ?>>
 						</div>
 						<?php if($_SESSION['login_type'] == 1): ?>
 						<div class="form-group">
 							<label for="" class="control-label">User Role</label>
-							<select name="type" id="type" class="custom-select custom-select-sm">
+							<select name="type" id="type" class="custom-select custom-select-sm" <?php echo $fieldDisabled; ?>>
 								<!-- <option value="3" <?php echo isset($type) && $type == 3 ? 'selected' : '' ?>>Team Member</option> -->
 								<option value="2" <?php echo isset($type) && $type == 2 ? 'selected' : '' ?>>Entity</option>
 								<option value="1" <?php echo isset($type) && $type == 1 ? 'selected' : '' ?>>Super Admin</option>
@@ -59,7 +83,7 @@ if (empty($_SESSION['csrf_token'])) {
 						<div class="form-group">
 							<label for="" class="control-label">Avatar</label>
 							<div class="custom-file">
-		                      <input type="file" class="custom-file-input" id="customFile" name="img" onchange="displayImg(this,$(this))">
+		                      <input type="file" class="custom-file-input" id="customFile" name="img" onchange="displayImg(this,$(this))" <?php echo $fieldDisabled; ?>>
 		                      <label class="custom-file-label" for="customFile">Choose file</label>
 		                    </div>
 						</div>
@@ -71,29 +95,29 @@ if (empty($_SESSION['csrf_token'])) {
 					<div class="col-md-6">
 					<div class="form-group" id="industryDropdownDiv">
 						<label for="" class="control-label">Industries</label>
-						<select name="industry_id" id="industries" class="custom-select custom-select-sm">
+						<select name="industry_id" id="industries" class="custom-select custom-select-sm" <?php echo $fieldDisabled; ?>>
 						
 						</select>
 					</div>
 
 						<div class="form-group">
 							<label class="control-label">Email</label>
-							<input type="email" class="form-control form-control-sm" name="email" required value="<?php echo isset($email) ? $email : '' ?>">
+							<input type="email" class="form-control form-control-sm" name="email" required value="<?php echo isset($email) ? $email : '' ?>" <?php echo $fieldReadonly; ?>>
 							<small id="#msg"></small>
 						</div>
 						<div class="form-group">
 							<label class="control-label">Phone</label>
-							<input type="number" class="form-control form-control-sm" name="number" required value="<?php echo isset($number) ? $number : '' ?>">
+							<input type="number" class="form-control form-control-sm" name="number" required value="<?php echo isset($number) ? $number : '' ?>" <?php echo $fieldReadonly; ?>>
 							<small id="#msg"></small>
 						</div>
 						<div class="form-group">
 							<label class="control-label">Password</label>
-							<input type="password" class="form-control form-control-sm" name="password" <?php echo !isset($id) ? "required":'' ?>>
+							<input type="password" class="form-control form-control-sm" name="password" <?php echo (!$worktypeOnlyEdit && !isset($id)) ? "required" : '' ?> <?php echo $fieldDisabled; ?>>
 							<small><i><?php echo isset($id) ? "Leave this blank if you dont want to change you password":'' ?></i></small>
 						</div>
 						<div class="form-group">
 							<label class="label control-label">Confirm Password</label>
-							<input type="password" class="form-control form-control-sm" name="cpass" <?php echo !isset($id) ? 'required' : '' ?>>
+							<input type="password" class="form-control form-control-sm" name="cpass" <?php echo (!$worktypeOnlyEdit && !isset($id)) ? 'required' : '' ?> <?php echo $fieldDisabled; ?>>
 							<small id="pass_match" data-status=''></small>
 						</div>
 						<?php
@@ -112,7 +136,25 @@ if (empty($_SESSION['csrf_token'])) {
 									WHERE tl.creator_id = {$_SESSION['login_id']}
 									ORDER BY tl.task_name ASC
 								");
-								$selectedTasks = isset($task_ids) ? array_map('intval', explode(',', (string)$task_ids)) : [];
+								$selectedTasks = [];
+								if (!empty($id)) {
+									$memberId = (int)$id;
+									$creatorId = (int)$_SESSION['login_id'];
+									$selectedTaskQuery = $conn->query("
+										SELECT DISTINCT work_type_id
+										FROM members_and_worktypes
+										WHERE member_id = {$memberId}
+										  AND creator_id = {$creatorId}
+									");
+									if ($selectedTaskQuery) {
+										while ($selectedTaskRow = $selectedTaskQuery->fetch_assoc()) {
+											$selectedTasks[] = (int)$selectedTaskRow['work_type_id'];
+										}
+									}
+								}
+								if (empty($selectedTasks)) {
+									$selectedTasks = isset($task_ids) ? array_map('intval', explode(',', (string)$task_ids)) : [];
+								}
 								while ($row = $taskList->fetch_assoc()):
 									$taskId = (int)$row['id'];
 								?>
@@ -148,8 +190,12 @@ if (empty($_SESSION['csrf_token'])) {
 <script>
     // Function to load industries based on the selected office
     function loadIndustries() {
-        var officeId = document.getElementById('offices').value;
+        var officesDropdown = document.getElementById('offices');
         var industriesDropdown = document.getElementById('industries');
+        if (!officesDropdown || !industriesDropdown) {
+            return;
+        }
+        var officeId = officesDropdown.value;
 
         // Clear the industries dropdown while loading data
         //industriesDropdown.innerHTML = '<option value="">Loading...</option>';
@@ -169,10 +215,11 @@ if (empty($_SESSION['csrf_token'])) {
     }
 
     // Attach an event listener to the offices dropdown to trigger loading of industries
-    document.getElementById('offices').addEventListener('change', loadIndustries);
-
-    // Initial load of industries based on the selected office (if applicable)
-    loadIndustries(); // You can decide whether to keep this initial load or load only on user selection
+    var officesDropdown = document.getElementById('offices');
+    if (officesDropdown) {
+        officesDropdown.addEventListener('change', loadIndustries);
+        loadIndustries();
+    }
 </script>
 
 

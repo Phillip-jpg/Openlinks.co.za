@@ -106,7 +106,7 @@ if (!isset($conn)) {
 
 
                         <!-- Cancel Button -->
-                        <button class="btn btn-flat bg-gradient-secondary mx-2" type="button" onclick="location.href='index.php?page=score_cards'">Back</button>
+                        <!-- <button class="btn btn-flat bg-gradient-secondary mx-2" type="button" onclick="location.href='index.php?page=score_cards'">Back</button> -->
                     </div>
                 </div>
             </form>

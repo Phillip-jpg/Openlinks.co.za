@@ -183,6 +183,16 @@
               </a>
           </li>
           <?php endif; ?>
+
+
+          <?php if ($_SESSION['login_type'] == 3): ?>
+          <li class="nav-item">
+            <a href="./index.php?page=my_teams_schedule" class="nav-link nav-my_teams_schedule">
+                  <i class="fas fa-calendar-alt nav-icon"></i>
+                  <p>My Teams Schedule</p>
+              </a>
+          </li>
+          <?php endif; ?>
           
      <?php if ($_SESSION['login_type'] == 3 ): ?>
           <li class="nav-item">
