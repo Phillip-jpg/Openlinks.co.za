@@ -1,28 +1,65 @@
 <?php
 // Include the database connection file
 include 'db_connect.php';
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+function finishAsyncResponse(string $body): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
+    ignore_user_abort(true);
+    @set_time_limit(0);
+
+    if (function_exists('fastcgi_finish_request')) {
+        echo $body;
+        @fastcgi_finish_request();
+        return;
+    }
+
+    @apache_setenv('no-gzip', '1');
+    @ini_set('zlib.output_compression', '0');
+    @ini_set('implicit_flush', '1');
+
+    header('Connection: close');
+    header('Content-Length: ' . strlen($body));
+
+    echo $body;
+
+    while (ob_get_level() > 0) {
+        @ob_end_flush();
+    }
+
+    @flush();
+}
+
+$isAjaxRequest = strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+$emailJobs = [];
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Check if the necessary POST parameters are set
     if (isset($_POST['manager_id'], $_POST['activity_id'], $_POST['user_id'], $_POST['project_id'])) {
         
-        $pm_comment = $_POST['pm_comment'];
-        $pm_quantity = $_POST['pm_quantity'];
+        $pm_comment = $_POST['pm_comment'] ?? '';
+        $pm_quantity = $_POST['pm_quantity'] ?? '';
         
         $userId = $_POST['user_id'];
         $projectId = $_POST['project_id'];
         $managerId = $_POST['manager_id'];
         $activityId = $_POST['activity_id'];
-        $days_left = $_POST['days_left'];
-        $duration = $_POST['duration'];
-        $status = $_POST['status'];
-        $done_days = $_POST['days_left'];
+        $days_left = isset($_POST['days_left']) ? (int)$_POST['days_left'] : 0;
+        $duration = isset($_POST['duration']) ? (int)$_POST['duration'] : 0;
+        $status = $_POST['status'] ?? '';
+        $done_days = $days_left;
         
-        $period = $_POST['period'];
-        $where = $_POST['where'];
-        $priority = $_POST['priority'];
+        $period = $_POST['period'] ?? '';
+        $where = $_POST['where'] ?? '';
+        $priority = $_POST['priority'] ?? '';
         
-        $login_id = $_SESSION['login_id'];
+        $login_id = isset($_SESSION['login_id']) ? (int)$_SESSION['login_id'] : (int)$managerId;
 
         if ($status === "Done") {
             $updateQuery = "UPDATE assigned_duties
@@ -48,10 +85,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             $insert_notifications = "INSERT INTO pm_notifications (Member_ID, PM_ID, Job_ID, Activity_ID, Notification_Type) VALUES ($userId, $managerId, $projectId, $activityId, 2)";
             $conn->query($insert_notifications);
-            
-            
-               include 'send_email.php';
-            
             $Query = $conn->query("
                 SELECT DISTINCT
                     pl.name AS jobname,
@@ -221,7 +254,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </html>
             ";
             
-            sendEmailNotification("$pm_email", $pmCloseSubject, $pmCloseMessage);
+            if (!empty($pm_email)) {
+                $emailJobs[] = [
+                    'to' => (string)$pm_email,
+                    'subject' => (string)$pmCloseSubject,
+                    'message' => (string)$pmCloseMessage
+                ];
+            }
             
             
             $memberCloseSubject = "Your Activity Has Been SIGNED OFF for Job ID $projectId";
@@ -323,10 +362,42 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </html>
                 ";
                 
-                sendEmailNotification($member_email, $memberCloseSubject, $memberCloseMessage);
+                if (!empty($member_email)) {
+                    $emailJobs[] = [
+                        'to' => (string)$member_email,
+                        'subject' => (string)$memberCloseSubject,
+                        'message' => (string)$memberCloseMessage
+                    ];
+                }
             
             
             if ($conn->query($updateQuery) === TRUE) {
+                if (!empty($emailJobs)) {
+                    register_shutdown_function(static function () use ($emailJobs): void {
+                        include_once 'send_email.php';
+                        if (!function_exists('sendEmailNotification')) {
+                            return;
+                        }
+
+                        foreach ($emailJobs as $job) {
+                            $to = trim((string)($job['to'] ?? ''));
+                            $subject = (string)($job['subject'] ?? '');
+                            $message = (string)($job['message'] ?? '');
+
+                            if ($to === '' || $subject === '' || $message === '') {
+                                continue;
+                            }
+
+                            sendEmailNotification($to, $subject, $message);
+                        }
+                    });
+                }
+
+                if ($isAjaxRequest) {
+                    finishAsyncResponse("OK");
+                    exit;
+                }
+
                 if (!empty($period)) {
                     echo "<p style='color:red; font-size:20px; font-weight:bold'>Changes have been successfully made ! </p>";
                     echo "<a  href='index.php?page=my_team_progress_period&p=$period&w=$where'><span class='badge badge-info' style='font-size:18px; font-family: segoe ui'> Back</span></a>";
@@ -339,6 +410,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             } else {
                 // Handle database update error
+                if ($isAjaxRequest) {
+                    http_response_code(500);
+                    echo "Error updating data: " . $conn->error;
+                    exit;
+                }
                 echo "Error updating data: " . $conn->error . "<br>";
             }
             
@@ -352,6 +428,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             ";
 
             if ($conn->query($updateQuery) === TRUE) {
+                if ($isAjaxRequest) {
+                    echo "OK";
+                    exit;
+                }
+
                 if (!empty($period)) {
                     echo "<p style='color:red; font-size:20px; font-weight:bold'>Changes have been successfully made ! </p>";
                     echo "<a  href='index.php?page=my_team_progress_period&p=$period&w=$where'><span class='badge badge-info' style='font-size:18px; font-family: segoe ui'> Back</span></a>";
@@ -364,6 +445,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             } else {
                 // Handle database update error
+                if ($isAjaxRequest) {
+                    http_response_code(500);
+                    echo "Error updating data: " . $conn->error;
+                    exit;
+                }
                 echo "Error updating data: " . $conn->error . "<br>";
             }
             
@@ -376,6 +462,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 AND activity_id = $activityId";
         
             if ($conn->query($updateQuery) === TRUE) {
+                if ($isAjaxRequest) {
+                    echo "OK";
+                    exit;
+                }
+
                 if (!empty($period)) {
                     echo "<p style='color:red; font-size:20px; font-weight:bold'>Changes have been successfully made ! </p>";
                     echo "<a  href='index.php?page=my_team_progress_period&p=$period&w=$where'><span class='badge badge-info' style='font-size:18px; font-family: segoe ui'> Back</span></a>";
@@ -388,6 +479,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             } else {
                 // Handle database update error
+                if ($isAjaxRequest) {
+                    http_response_code(500);
+                    echo "Error updating data: " . $conn->error;
+                    exit;
+                }
                 echo "Error updating data: " . $conn->error . "<br>";
             }
             
@@ -404,6 +500,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                   AND activity_id = $activityId";
 
             if ($conn->query($updateQuery) === TRUE) {
+                if ($isAjaxRequest) {
+                    echo "OK";
+                    exit;
+                }
+
                 if (!empty($period)) {
                     echo "<p style='color:red; font-size:20px; font-weight:bold'>Changes have been successfully made ! </p>";
                     echo "<a  href='index.php?page=my_team_progress_period&p=$period&w=$where'><span class='badge badge-info' style='font-size:18px; font-family: segoe ui'> Back</span></a>";
@@ -416,8 +517,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             } else {
                 // Handle database update error
+                if ($isAjaxRequest) {
+                    http_response_code(500);
+                    echo "Error updating data: " . $conn->error;
+                    exit;
+                }
                 echo "Error updating data: " . $conn->error . "<br>";
             }
+        }
+    } else {
+        if ($isAjaxRequest) {
+            http_response_code(400);
+            echo "Error: Missing or incomplete parameters.";
+            exit;
         }
     }
 }

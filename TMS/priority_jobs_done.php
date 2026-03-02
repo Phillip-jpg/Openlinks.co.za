@@ -258,7 +258,7 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 		                      
 		                      <hr>
 		                      
-		                      <a  stlye="color:green"class="dropdown-item" href="./index.php?page=save_done_request&id=<?php echo $row['id'] ?>&manager_id=<?php echo $row['manager_id'] ?>&team_id=<?php echo $row['team_id'] ?>">Grant Done</a>
+		                      <a style="color:green" class="dropdown-item grant-done-link" href="./index.php?page=save_done_request&id=<?php echo $row['id'] ?>&manager_id=<?php echo $row['manager_id'] ?>&team_id=<?php echo $row['team_id'] ?>">Grant Done</a>
 		                    
 		                      <!--<a class="dropdown-item delete_project" href="javascript:void(0)" data-id="<?php echo $row['id'] ?>">Delete</a>-->
 		                  <?php endif; ?>
@@ -331,9 +331,15 @@ $(document).ready(function(){
 
 	$(document).ready(function(){
 		$('#list').dataTable()
-	
+
 	$('.delete_project').click(function(){
 	_conf("Are you sure to delete this job?","delete_project",[$(this).attr('data-id')])
+	})
+
+	$('.grant-done-link').on('click', function(e){
+		if(!confirm('Are you sure you want to Grant Done for this job?')){
+			e.preventDefault();
+		}
 	})
 	})
 	function delete_project($id){

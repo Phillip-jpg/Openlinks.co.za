@@ -9,12 +9,12 @@ $result = null; // Initialize the $result variable
  
         
 
-        $period=$_GET['period'];
-        $where=$_GET['where'];
-        $priority=$_GET['priority'];
-        $pm_id=$_GET['pm_id'];
-        $projectId = $_GET['project_id'];
-        $activityId = $_GET['activity_id'];
+        $period = $_GET['period'] ?? '';
+        $where = $_GET['where'] ?? '';
+        $priority = $_GET['priority'] ?? '';
+        $pm_id = isset($_GET['pm_id']) ? (int)$_GET['pm_id'] : 0;
+        $projectId = (int)$_GET['project_id'];
+        $activityId = (int)$_GET['activity_id'];
         
        $login_id = $_SESSION['login_id'];
        
@@ -112,11 +112,9 @@ $result = null; // Initialize the $result variable
 					<input type="number" class="form-control form-control-sm" name="my_quantity" value="">
 					
 				</div>
-					<div class="form-group">
+				<div class="form-group">
 					<label for="" class="control-label">Comment</label>
-					<textarea name="my_comment" id="" cols="2" rows="2" class="form-control">
-					
-					</textarea>
+					<textarea name="my_comment" id="my_comment" cols="2" rows="2" class="form-control" style="text-align:left;"></textarea>
 				</div>
 				</div>
 			</div>
@@ -142,22 +140,46 @@ $result = null; // Initialize the $result variable
 </div>
 
 <script>
-$(document).ready(function () {
+$(function () {
     var $form = $('#manage-days');
     var $saveBtn = $('#request-save-btn');
     var $status = $('#request-save-status');
-    var saveLabel = $saveBtn.text();
+    var saveLabel = $.trim($saveBtn.text()) || 'Save';
+    var isSubmitting = false;
 
-    function setSaveState(isSaving, label) {
-        $saveBtn.prop('disabled', isSaving);
-        $saveBtn.text(label);
+    if (!$form.length || !$saveBtn.length) {
+        return;
     }
 
-    $form.on('submit', function (e) {
+    function setSaveState(disabled, label) {
+        $saveBtn.prop('disabled', disabled).text(label);
+    }
+
+    function showStatus(type, message) {
+        var statusClass = 'alert-info';
+        if (type === 'success') {
+            statusClass = 'alert-success';
+        } else if (type === 'danger') {
+            statusClass = 'alert-danger';
+        }
+
+        $status
+            .removeClass('alert alert-info alert-success alert-danger')
+            .addClass('alert ' + statusClass)
+            .text(message)
+            .show();
+    }
+
+    $form.off('submit.jobFinalisation').on('submit.jobFinalisation', function (e) {
         e.preventDefault();
 
+        if (isSubmitting) {
+            return false;
+        }
+
+        isSubmitting = true;
         setSaveState(true, 'Saving...');
-        $status.hide().removeClass('alert alert-success alert-danger').text('');
+        showStatus('info', 'Saving request, please wait...');
 
         if (typeof start_load === 'function') {
             start_load();
@@ -173,31 +195,36 @@ $(document).ready(function () {
             timeout: 45000,
             success: function (resp) {
                 var cleanResp = $.trim(String(resp || ''));
+                var normalizedResp = cleanResp.toUpperCase();
+                var isSaved = normalizedResp === 'OK' || cleanResp.toLowerCase().indexOf('data saved successfully') !== -1;
 
-                if (cleanResp === 'OK') {
-                    $status.addClass('alert alert-success').text('Request saved successfully.').show();
+                if (isSaved) {
+                    showStatus('success', 'Request saved successfully.');
                     if (typeof alert_toast === 'function') {
                         alert_toast('Request saved successfully.', 'success');
                     }
                     setSaveState(true, 'Saved');
                     $form.find('input, textarea, select').not(':hidden').prop('disabled', true);
-                } else {
-                    $status.addClass('alert alert-danger').text(cleanResp || 'Save failed.').show();
-                    if (typeof alert_toast === 'function') {
-                        alert_toast(cleanResp || 'Save failed.', 'danger');
-                    }
-                    setSaveState(false, saveLabel);
+                    return;
                 }
+
+                showStatus('danger', cleanResp || 'Save failed.');
+                if (typeof alert_toast === 'function') {
+                    alert_toast(cleanResp || 'Save failed.', 'danger');
+                }
+                isSubmitting = false;
+                setSaveState(false, saveLabel);
             },
             error: function (xhr, status) {
                 var message = status === 'timeout'
                     ? 'Save timed out. Please try again.'
                     : $.trim(String(xhr.responseText || 'Request failed.'));
 
-                $status.addClass('alert alert-danger').text(message).show();
+                showStatus('danger', message);
                 if (typeof alert_toast === 'function') {
                     alert_toast(message, 'danger');
                 }
+                isSubmitting = false;
                 setSaveState(false, saveLabel);
             },
             complete: function () {
@@ -206,6 +233,8 @@ $(document).ready(function () {
                 }
             }
         });
+
+        return false;
     });
 });
 </script>

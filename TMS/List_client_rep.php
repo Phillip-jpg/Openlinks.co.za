@@ -38,14 +38,14 @@
               
                     if ($_SESSION['login_type'] == 2) {
                     
-                    $qry = $conn->query("SELECT client_rep.*, yasccoza_openlink_market.client.company_name
+                    $qry = $conn->query("SELECT DISTINCT client_rep.*, yasccoza_openlink_market.client.company_name
                     FROM client_rep
                     LEFT JOIN yasccoza_openlink_market.client
                     ON client_rep.CLIENT_ID = yasccoza_openlink_market.client.CLIENT_ID where client_rep.USER_CREATED={$_SESSION['login_id']};");
                     }
                     elseif($_SESSION['login_type'] == 3) {
                         
-                    $qry = $conn->query("SELECT client_rep.*, yasccoza_openlink_market.client.company_name
+                    $qry = $conn->query("SELECT DISTINCT client_rep.*, yasccoza_openlink_market.client.company_name
                     FROM client_rep
                     LEFT JOIN yasccoza_openlink_market.client
                     ON client_rep.CLIENT_ID = yasccoza_openlink_market.client.CLIENT_ID
@@ -55,7 +55,7 @@
                         
                     }else{
                         
-                         $qry = $conn->query("SELECT client_rep.*, yasccoza_openlink_market.client.company_name
+                         $qry = $conn->query("SELECT DISTINCT client_rep.*, yasccoza_openlink_market.client.company_name
                     FROM client_rep
                     LEFT JOIN yasccoza_openlink_market.client
                     ON client_rep.CLIENT_ID = yasccoza_openlink_market.client.CLIENT_ID;");

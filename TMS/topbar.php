@@ -19,18 +19,23 @@ if ($login_id > 0) {
             SELECT DISTINCT nt.*,
                 (SELECT CONCAT(us.firstname,' ',us.lastname) FROM users us WHERE us.id = nt.Member_ID LIMIT 1) AS member,
                 (SELECT IF(us.type = 3, 'Member', NULL) FROM users us WHERE us.id = nt.Member_ID LIMIT 1) AS Role,
+                (SELECT cl.company_name FROM yasccoza_openlink_market.client cl WHERE cl.CLIENT_ID = nt.Member_ID ORDER BY cl.client_pri_id DESC LIMIT 1) AS orbited_client_name,
                 pl.name AS Job_Name,
+                rm.reminder_name AS reminder_name,
                 up.name AS activity_name,
                 c.company_name,
+                rc.company_name AS reminder_client_name,
                 CONCAT(u1.firstname,' ',u1.lastname) as Manager,
                 CONCAT(uc.firstname, ' ', uc.lastname) AS Manager_Created,
                 ts.team_name
             FROM pm_notifications nt
             LEFT JOIN project_list pl ON pl.id = nt.Job_ID
+            LEFT JOIN reminders rm ON rm.id = nt.Job_ID
             LEFT JOIN users u1 ON u1.id=pl.manager_id
             LEFT JOIN users uc ON uc.id = $login_id
             LEFT JOIN user_productivity up ON up.id = nt.Activity_ID
             LEFT JOIN yasccoza_openlink_market.client c ON pl.CLIENT_ID = c.CLIENT_ID
+            LEFT JOIN yasccoza_openlink_market.client rc ON rc.CLIENT_ID = rm.account
             LEFT JOIN team_schedule ts ON ts.team_id=nt.team_id
             WHERE nt.PM_ID = $login_id
             ORDER BY nt.id DESC
@@ -44,20 +49,24 @@ if ($login_id > 0) {
             SELECT DISTINCT nt.*,
                 (SELECT CONCAT(us.firstname, ' ', us.lastname) FROM users us WHERE us.id = nt.Member_ID LIMIT 1) AS member,
                 pl.name AS Job_Name,
+                rm.reminder_name AS reminder_name,
                 up.name AS activity_name,
                 (SELECT us.email FROM users us WHERE us.id = nt.Member_ID LIMIT 1) AS member_email,
                 ts.team_name,
                 c.company_name,
+                rc.company_name AS reminder_client_name,
                 CONCAT(u1.firstname, ' ', u1.lastname) AS Manager,
                 CONCAT(uc.firstname, ' ', uc.lastname) AS Manager_Created,
                 (SELECT IF(us.type = 3, 'Member', NULL) FROM users us WHERE us.id = nt.Member_ID LIMIT 1) AS Role
             FROM member_notifications nt
             LEFT JOIN team_schedule ts ON ts.team_id = nt.team_id
             LEFT JOIN project_list pl ON pl.id = nt.Job_ID
+            LEFT JOIN reminders rm ON rm.id = nt.Job_ID
             LEFT JOIN users u1 ON u1.id = pl.manager_id
             LEFT JOIN users uc ON uc.id = nt.PM_ID
             LEFT JOIN user_productivity up ON up.id = nt.Activity_ID
             LEFT JOIN yasccoza_openlink_market.client c ON pl.CLIENT_ID = c.CLIENT_ID
+            LEFT JOIN yasccoza_openlink_market.client rc ON rc.CLIENT_ID = rm.account
             WHERE nt.Member_ID = $login_id
             ORDER BY nt.id DESC;
         ");
@@ -87,7 +96,9 @@ if ($login_id > 0) {
             <a class="nav-link" href="./">
                 <b style="color:white; font-size: 14px;">
                     <?php
-                        $system_name = $_SESSION['system']['name'];
+                        $system_name = isset($_SESSION['system']['name']) && $_SESSION['system']['name'] !== ''
+                            ? (string)$_SESSION['system']['name']
+                            : 'OpenLinks';
                         echo strlen($system_name) > 20 ? substr($system_name, 0, 20).'...' : $system_name;
                     ?>
                 </b>
@@ -167,9 +178,9 @@ if ($login_id > 0) {
                                             Job ID: <b>{$row['Job_ID']}</b><br>
                                             Job Name: <b>{$row['Job_Name']}</b><br>
                                             Entity: <b>{$row['Manager']}</b><br>
-                                            Team Assigned: {$row['team_name']}<br>
-                                            Activity: {$row['activity_name']}<br>
-                                            Client: </b>{$row['company_name']} </b>";
+                                            Team Assigned: <b>{$row['team_name']}</b><br>
+                                            Activity: <b>{$row['activity_name']}</b><br>
+                                            Client: <b>{$row['company_name']} </b>";
                                         $notifLink = "index.php?page=my_progress";
                                     }
                                 }
@@ -181,9 +192,9 @@ if ($login_id > 0) {
                                             Member: <b>{$row['member']}</b><br>
                                             Job ID: <b>{$row['Job_ID']}</b><br>
                                             Job Name: <b>{$row['Job_Name']}</b><br>
-                                            Team Assigned: {$row['team_name']}<br>
-                                            Activity: {$row['activity_name']}<br>
-                                            Client: {$row['company_name']}";
+                                            Team Assigned: <b> {$row['team_name']}</b><br>
+                                            Activity: <b>{$row['activity_name']}</b><br>
+                                            Client: <b>{$row['company_name']}</b>";
                                         $notifLink = "index.php?page=team_progress";
                                     }
                                     if ($login_type == 3) {
@@ -225,7 +236,7 @@ if ($login_id > 0) {
                                         $notifText = "<b>{$row['Manager']}</b>, a Job has been <b>Closed</b><br>
                                             Job ID: <b>{$row['Job_ID']}</b><br>
                                             Job Name: <b>{$row['Job_Name']}</b><br>
-                                            Team Assigned: {$row['team_name']}<br>
+                                            Team Assigned: <b>{$row['team_name']}</b><br>
                                             Client: <b>{$row['company_name']}</b>";
                                         $notifLink = "index.php?page=job_archive";
                                     }
@@ -323,6 +334,43 @@ if ($login_id > 0) {
 	                                            Client: <b>{$clientName}</b>";
 	                                        $notifLink = "index.php?page=Productivity_Pipeline";
 	                                    }
+	                                }
+
+	                                if ($row['Notification_Type'] == 900) {
+	                                    if ($login_type == 2) {
+	                                        $clientName = !empty($row['orbited_client_name']) ? $row['orbited_client_name'] : 'N/A';
+	                                        $notifText = "This notification confirms that a client has been orbited to your account.<br>
+	                                            Client: <b>{$clientName}</b>";
+	                                        $notifLink = "index.php?page=client_list";
+	                                    }
+	                                }
+
+	                                // TYPE 887 (PM: REMINDER SET)
+	                                if ($row['Notification_Type'] == 887) {
+	                                    if ($login_type == 2) {
+	                                        $teamName = !empty($row['team_name']) ? $row['team_name'] : 'your team';
+	                                        $clientName = !empty($row['reminder_client_name']) ? $row['reminder_client_name'] : 'N/A';
+	                                        $reminderTitle = !empty($row['reminder_name']) ? $row['reminder_name'] : 'Reminder';
+	                                        $notifText = "This notification confirms that a reminder has been set.<br>
+	                                            Reminder: <b>{$reminderTitle}</b><br>
+	                                            Client: <b>{$clientName}</b><br>
+	                                            Team: <b>{$teamName}</b>";
+	                                        $notifLink = "index.php?page=reminders_list";
+	                                    }
+	                                }
+
+	                                // TYPE 888 (PM/MEMBER: REMINDER ALERT)
+	                                if ($row['Notification_Type'] == 888) {
+	                                    $teamName = !empty($row['team_name']) ? $row['team_name'] : 'your team';
+	                                    $clientName = !empty($row['reminder_client_name']) ? $row['reminder_client_name'] : 'N/A';
+	                                    $reminderTitle = !empty($row['reminder_name']) ? $row['reminder_name'] : 'Reminder';
+	                                    $notifText = "Reminder alert triggered.<br>
+	                                        Reminder: <b>{$reminderTitle}</b><br>
+	                                        Team: <b>{$teamName}</b><br>
+	                                        Client: <b>{$clientName}</b>";
+	                                    $notifLink = ($login_type == 2)
+	                                        ? "index.php?page=reminders_list"
+	                                        : "index.php?page=team_reminder";
 	                                }
 
 	                                // TYPE 111 (MEMBER: ORBITED)
@@ -568,6 +616,21 @@ if ($login_id > 0) {
     background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
     color: #9a3412;
     border: 1px solid #fb923c;
+}
+.notif-badge.type-15 { /* Account Orbited */
+    background: linear-gradient(135deg, #fffaf0 0%, #feebc8 100%);
+    color: #9c4221;
+    border: 1px solid #f6ad55;
+}
+.notif-badge.type-16 { /* Reminder Set */
+    background: linear-gradient(135deg, #e8fff5 0%, #c6f6d5 100%);
+    color: #1f5132;
+    border: 1px solid #68d391;
+}
+.notif-badge.type-17 { /* Reminder Alert */
+    background: linear-gradient(135deg, #fff7e6 0%, #fde68a 100%);
+    color: #7c2d12;
+    border: 1px solid #f59e0b;
 }
 .notif-badge.type-13 { /* Orbit Notification */
     background: linear-gradient(135deg, #eef2ff 0%, #c7d2fe 100%);
@@ -844,6 +907,8 @@ $(document).ready(function() {
         // 50 = Member created for entity
         // 111 = Member orbited
         // 222 = PM has new orbited member
+        // 887 = Reminder set
+        // 888 = Reminder alert
 
         switch (ntype) {
             case 1:  return 5; // Request for Done
@@ -868,6 +933,9 @@ $(document).ready(function() {
             case 466:return 14; // Fully Assigned
             case 111:return 13; // Orbit Notification
             case 222:return 13; // Orbit Notification
+            case 900:return 15; // Account Orbited
+            case 887:return 16; // Reminder Set
+            case 888:return 17; // Reminder Alert
 
             default: return 4; // fallback
         }
@@ -886,6 +954,9 @@ $(document).ready(function() {
             case 12: return 'Entity Creation';
             case 13: return 'Orbit Notification';
             case 14: return 'Fully Assigned';
+            case 15: return 'Account Orbited';
+            case 16: return 'Reminder Set';
+            case 17: return 'Reminder Alert';
             case 50: return 'Member Creation';
             default: return 'Info';
         }

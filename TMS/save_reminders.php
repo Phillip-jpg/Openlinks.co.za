@@ -39,6 +39,33 @@ function normalize_datetime(string $value): string
     return date('Y-m-d H:i:s', $time);
 }
 
+function finishAsyncResponse(string $body): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        @session_write_close();
+    }
+
+    ignore_user_abort(true);
+    @set_time_limit(0);
+
+    if (!headers_sent()) {
+        header('Content-Type: text/plain; charset=UTF-8');
+        header('Connection: close');
+        header('Content-Length: ' . strlen($body));
+    }
+
+    echo $body;
+
+    while (ob_get_level() > 0) {
+        @ob_end_flush();
+    }
+    @flush();
+
+    if (function_exists('fastcgi_finish_request')) {
+        @fastcgi_finish_request();
+    }
+}
+
 function fetchUserEmailName(mysqli $conn, int $userId): array
 {
     $stmt = $conn->prepare("SELECT email, CONCAT(firstname, ' ', lastname) AS full_name FROM users WHERE id = ? LIMIT 1");
@@ -378,6 +405,29 @@ function safeSendReminderCreatedEmails(mysqli $conn, array $payload): void
     }
 }
 
+function safeInsertReminderCreatedPmNotification(mysqli $conn, int $pmId, int $teamId, int $reminderId): void
+{
+    if ($pmId <= 0 || $reminderId <= 0) {
+        return;
+    }
+
+    $stmt = $conn->prepare("
+        INSERT INTO pm_notifications (PM_ID, Job_ID, team_id, Notification_Type)
+        VALUES (?, ?, ?, 887)
+    ");
+
+    if (!$stmt) {
+        error_log('Failed to prepare reminder PM notification insert: ' . $conn->error);
+        return;
+    }
+
+    $stmt->bind_param('iii', $pmId, $reminderId, $teamId);
+    if (!$stmt->execute()) {
+        error_log('Failed to insert reminder PM notification: ' . $stmt->error);
+    }
+    $stmt->close();
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     http_response_code(405);
     echo 'Invalid request method.';
@@ -399,7 +449,7 @@ $meeting_time = normalize_time((string)($_POST['meeting_time'] ?? ''));
 $start_date = normalize_datetime((string)($_POST['start_date'] ?? ''));
 $scheduled_end_date = normalize_datetime((string)($_POST['end_date'] ?? ''));
 $meeting_day = substr(trim((string)($_POST['meeting_day'] ?? '')), 0, 225);
-$trigger_time = normalize_time((string)($_POST['trigger_time'] ?? ''));
+$trigger_time = $meeting_time;
 $online_meeting = substr(trim((string)($_POST['online_meeting'] ?? '')), 0, 225);
 $meeting_link = substr(trim((string)($_POST['meeting_link'] ?? '')), 0, 225);
 $descriptionInput = (string)($_POST['description'] ?? '');
@@ -423,7 +473,6 @@ if (
     $start_date === '' ||
     $scheduled_end_date === '' ||
     $meeting_day === '' ||
-    $trigger_time === '' ||
     $online_meeting === '' ||
     $meeting_link === '' ||
     !in_array($status, [0, 1], true)
@@ -563,6 +612,12 @@ if ($id > 0) {
 
 if ($stmt->execute()) {
     $shouldSendCreationEmail = ($id <= 0);
+    $createdReminderId = $shouldSendCreationEmail ? (int)$stmt->insert_id : 0;
+
+    if ($shouldSendCreationEmail) {
+        safeInsertReminderCreatedPmNotification($conn, $who, $team, $createdReminderId);
+    }
+
     $emailPayload = [
         'who' => $who,
         'account' => $account,
@@ -581,32 +636,22 @@ if ($stmt->execute()) {
         'description' => $description,
     ];
 
-    echo '1';
     $stmt->close();
 
-    // Return success first so the UI is not blocked by SMTP latency.
     if ($shouldSendCreationEmail) {
-        ignore_user_abort(true);
-        if (function_exists('session_write_close')) {
-            @session_write_close();
-        }
-
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } else {
-            while (ob_get_level() > 0) {
-                @ob_end_flush();
-            }
-            @flush();
-        }
+        // Respond immediately, then continue sending emails in background.
+        finishAsyncResponse('1');
 
         try {
             safeSendReminderCreatedEmails($conn, $emailPayload);
         } catch (Throwable $t) {
             error_log('Reminder email send failed: ' . $t->getMessage());
         }
+
+        exit;
     }
 
+    echo '1';
     exit;
 } else {
     http_response_code(500);

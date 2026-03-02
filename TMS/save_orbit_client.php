@@ -135,6 +135,22 @@ try {
         throw new RuntimeException("Client orbit insert failed: " . $conn->error);
     }
 
+    $notifStmt = $conn->prepare("
+        INSERT INTO pm_notifications (
+            Member_ID,
+            PM_ID,
+            Job_ID,
+            Activity_ID,
+            team_id,
+            Notification_Type
+        ) VALUES (?, ?, 0, 0, 0, 900)
+    ");
+    $notifStmt->bind_param("ii", $CLIENT_ID, $pm_id);
+
+    if (!$notifStmt->execute()) {
+        throw new RuntimeException("PM notification insert failed: " . $conn->error);
+    }
+
     $conn->commit();
 
     // ----------------------------------------------------
@@ -190,6 +206,7 @@ try {
                           This message is to let you know that a new entity has been assigned to service your account:
                           <b>$company_name</b>.
                         </p>
+            
             
                         <p><b>Effective Date:</b> $effective_date</p>
             
@@ -255,8 +272,6 @@ try {
             <p>
               This message is to inform you that an account has been orbited from another entity and assigned to your entity to service.
             </p>
-
-            <p><b>Effective Date:</b> $effective_date</p>
 
             <table width='100%' cellpadding='8' cellspacing='0' style='border-collapse:collapse;font-size:14px;margin-top:15px;'>
               <tr>

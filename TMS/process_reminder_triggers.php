@@ -109,7 +109,6 @@ function fetchDueParentReminders(mysqli $conn, int $parentId = 0): array
           AND DATE(r.start_date) <= CURDATE()
           AND CURDATE() <= DATE(r.scheduled_end_date)
           AND MOD(DATEDIFF(CURDATE(), DATE(r.start_date)), r.every_days) = 0
-          AND CURTIME() >= r.trigger_time
     ";
 
     if ($parentId > 0) {
@@ -178,7 +177,11 @@ function getOrCreateIntervalRecord(
             }
         }
 
-        return ['id' => (int)$row['id'], 'status' => (int)$row['status']];
+        return [
+            'id' => (int)$row['id'],
+            'status' => (int)$row['status'],
+            'created' => false,
+        ];
     }
 
     $scheduledFor = $intervalDate . ' ' . $triggerTime;
@@ -207,7 +210,11 @@ function getOrCreateIntervalRecord(
 
     $id = (int)$insert->insert_id;
     $insert->close();
-    return ['id' => $id, 'status' => INTERVAL_STATUS_PENDING];
+    return [
+        'id' => $id,
+        'status' => INTERVAL_STATUS_PENDING,
+        'created' => true,
+    ];
 }
 
 function markIntervalSent(mysqli $conn, int $intervalId): void
@@ -241,6 +248,80 @@ function markIntervalFailed(mysqli $conn, int $intervalId, string $error): void
     $stmt->bind_param('isi', $status, $safeError, $intervalId);
     $stmt->execute();
     $stmt->close();
+}
+
+function safeInsertReminderAlertNotifications(mysqli $conn, array $parent): void
+{
+    $pmId = (int)($parent['who'] ?? 0);
+    $teamId = (int)($parent['team'] ?? 0);
+    $reminderId = (int)($parent['id'] ?? 0);
+
+    if ($pmId <= 0 || $teamId <= 0 || $reminderId <= 0) {
+        return;
+    }
+
+    $pmStmt = $conn->prepare("
+        INSERT INTO pm_notifications (PM_ID, Job_ID, team_id, Notification_Type)
+        VALUES (?, ?, ?, 888)
+    ");
+    if ($pmStmt) {
+        $pmStmt->bind_param('iii', $pmId, $reminderId, $teamId);
+        if (!$pmStmt->execute()) {
+            error_log('Reminder alert PM notification insert failed: ' . $pmStmt->error);
+        }
+        $pmStmt->close();
+    } else {
+        error_log('Reminder alert PM notification prepare failed: ' . $conn->error);
+    }
+
+    $membersStmt = $conn->prepare("
+        SELECT DISTINCT team_members
+        FROM team_schedule
+        WHERE team_id = ?
+          AND team_members > 0
+    ");
+    if (!$membersStmt) {
+        error_log('Reminder alert member fetch prepare failed: ' . $conn->error);
+        return;
+    }
+
+    $membersStmt->bind_param('i', $teamId);
+    if (!$membersStmt->execute()) {
+        error_log('Reminder alert member fetch execute failed: ' . $membersStmt->error);
+        $membersStmt->close();
+        return;
+    }
+
+    $memberRes = $membersStmt->get_result();
+    $memberIds = [];
+    while ($row = $memberRes->fetch_assoc()) {
+        $memberId = (int)($row['team_members'] ?? 0);
+        if ($memberId > 0) {
+            $memberIds[$memberId] = true;
+        }
+    }
+    $membersStmt->close();
+
+    if (empty($memberIds)) {
+        return;
+    }
+
+    $memberStmt = $conn->prepare("
+        INSERT INTO member_notifications (PM_ID, Member_ID, Job_ID, Team_id, Notification_Type)
+        VALUES (?, ?, ?, ?, 888)
+    ");
+    if (!$memberStmt) {
+        error_log('Reminder alert member notification prepare failed: ' . $conn->error);
+        return;
+    }
+
+    foreach (array_keys($memberIds) as $memberId) {
+        $memberStmt->bind_param('iiii', $pmId, $memberId, $reminderId, $teamId);
+        if (!$memberStmt->execute()) {
+            error_log('Reminder alert member notification insert failed: ' . $memberStmt->error);
+        }
+    }
+    $memberStmt->close();
 }
 
 function fetchUserEmailName(mysqli $conn, int $userId): array
@@ -527,21 +608,19 @@ try {
     foreach ($dueParents as $parent) {
         $parentId = (int)$parent['id'];
         $teamId = (int)$parent['team'];
-        $triggerTime = normalizeTimeValue((string)$parent['trigger_time']);
+        // Cron controls execution time; keep interval key deterministic even if trigger_time is empty.
+        $triggerTime = normalizeTimeValue((string)($parent['trigger_time'] ?? ''));
         if ($triggerTime === '') {
-            $result['failed_count']++;
-            $result['details'][] = ['parent_id' => $parentId, 'status' => 'failed', 'message' => 'Invalid trigger_time.'];
-            continue;
+            $triggerTime = normalizeTimeValue((string)($parent['meeting_time'] ?? ''));
+        }
+        if ($triggerTime === '') {
+            $triggerTime = '00:00:00';
         }
 
         $interval = getOrCreateIntervalRecord($conn, $parentId, $teamId, $intervalDate, $triggerTime);
         $intervalId = (int)$interval['id'];
-        $intervalStatus = (int)$interval['status'];
-
-        if ($intervalStatus === INTERVAL_STATUS_SENT) {
-            $result['skipped_count']++;
-            $result['details'][] = ['parent_id' => $parentId, 'interval_id' => $intervalId, 'status' => 'skipped', 'message' => 'Already sent for this interval.'];
-            continue;
+        if (!empty($interval['created'])) {
+            safeInsertReminderAlertNotifications($conn, $parent);
         }
 
         $send = sendReminderIntervalEmails($conn, $parent, $intervalDate);

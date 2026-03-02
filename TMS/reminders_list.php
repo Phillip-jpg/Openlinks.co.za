@@ -74,12 +74,12 @@ $qry = $conn->query($sql);
                         <th>Work Type</th>
                         <th>Meeting Day</th>
                         <th>Meeting Time</th>
-                        <th>Trigger Time</th>
                         <th>Start Date</th>
                         <th>Scheduled End Date</th>
                         <th>Platform</th>
                         <th>Meeting Link</th>
                         <th>Description</th>
+                        <th>Date Created</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -87,9 +87,9 @@ $qry = $conn->query($sql);
                         <?php while ($row = $qry->fetch_assoc()): ?>
                             <?php
                             $startDate = !empty($row['start_date']) ? date('Y-m-d H:i', strtotime((string)$row['start_date'])) : '';
+                            $date_created = !empty($row['date_created']) ? date('Y-m-d H:i', strtotime((string)$row['date_created'])) : '';
                             $endDate = !empty($row['scheduled_end_date']) ? date('Y-m-d H:i', strtotime((string)$row['scheduled_end_date'])) : '';
                             $meetingTime = !empty($row['meeting_time']) ? date('H:i', strtotime((string)$row['meeting_time'])) : '';
-                            $triggerTime = !empty($row['trigger_time']) ? date('H:i', strtotime((string)$row['trigger_time'])) : '';
                             $meetingLink = (string)($row['meeting_link'] ?? '');
                             $isActive = isset($row['status']) && (int)$row['status'] === 1;
                             ?>
@@ -145,7 +145,6 @@ $qry = $conn->query($sql);
                                 <td><?php echo htmlspecialchars((string)($row['task_name'] ?? '')); ?></td>
                                 <td><?php echo ucfirst(htmlspecialchars((string)($row['meeting_day'] ?? ''))); ?></td>
                                 <td><?php echo htmlspecialchars($meetingTime); ?></td>
-                                <td><?php echo htmlspecialchars($triggerTime); ?></td>
                                 <td><?php echo htmlspecialchars($startDate); ?></td>
                                 <td><?php echo htmlspecialchars($endDate); ?></td>
                                 <td><?php echo htmlspecialchars((string)($row['online_meeting'] ?? '')); ?></td>
@@ -157,6 +156,7 @@ $qry = $conn->query($sql);
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo htmlspecialchars((string)($row['description'] ?? '')); ?></td>
+                                 <td><?php echo htmlspecialchars($date_created); ?></td>
                             </tr>
                         <?php endwhile; ?>
                     <?php endif; ?>

@@ -296,7 +296,7 @@
               </li>
           <?php if($_SESSION['login_type'] == 2): ?>
             <li class="nav-item">
-                <a href="./index.php?page=reminders" class="nav-link nav-reminders">
+                <a href="./index.php?page=reminders_list" class="nav-link nav-reminders_list">
                   <i class="fas fa-clock nav-icon"></i>
                   <p>Reminders</p>
                 </a>

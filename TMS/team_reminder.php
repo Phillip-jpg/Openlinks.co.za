@@ -137,13 +137,15 @@ if ($loginId <= 0) {
                             <th>Meeting Time</th>
                             <th>Meeting Platform</th>
                             <th>Meeting Link</th>
+                            <th>Date Sent</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (!empty($rows)): ?>
                             <?php foreach ($rows as $row): ?>
                                 <?php
-                                $meetingTime = !empty($row['meeting_time']) ? date('H:i', strtotime((string)$row['meeting_time'])) : '';
+                                $dateCreated = !empty($row['created_at']) ? date('d/m/Y H:i', strtotime((string)$row['created_at'])) : '';
+                                 $meetingTime = !empty($row['meeting_time']) ? date('H:i', strtotime((string)$row['meeting_time'])) : '';
                                 $meetingDay = !empty($row['meeting_day']) ? ucfirst((string)$row['meeting_day']) : '';
                                 $meetingLink = trim((string)($row['meeting_link'] ?? ''));
                                 $intervalId = (int)($row['id'] ?? 0);
@@ -198,6 +200,7 @@ if ($loginId <= 0) {
                                             <a href="<?php echo htmlspecialchars($meetingLink); ?>" target="_blank" rel="noopener noreferrer">Open Link</a>
                                         <?php endif; ?>
                                     </td>
+                                     <td><?php echo htmlspecialchars($dateCreated); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>

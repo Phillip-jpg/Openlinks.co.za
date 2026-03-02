@@ -31,6 +31,7 @@ if (empty($_SESSION['csrf_token'])) {
                         <?php if ($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
                         <th>Entity</th>
                         <?php endif; ?>
+                        <th>Orbit Status</th>
                         <th>Sector</th>
                         <th>Company Rep</th>
                         <th>City</th>
@@ -50,6 +51,7 @@ if (empty($_SESSION['csrf_token'])) {
                             SELECT
                                 client.*,
                                 CONCAT(pm.firstname, ' ', pm.lastname) AS entity_name,
+                                CASE WHEN MAX(COALESCE(client.orbiter_id, 0)) = 0 THEN 'Not Orbited' ELSE 'Orbited' END AS orbit_status,
                                 title,
                                 office,
                                 GROUP_CONCAT(DISTINCT CONCAT('(', client_rep.REP_NAME, ')') ORDER BY client_rep.REP_NAME ASC) AS reps
@@ -63,16 +65,17 @@ if (empty($_SESSION['csrf_token'])) {
                             LEFT JOIN client_rep
                                 ON client_rep.CLIENT_ID = yasccoza_openlink_market.client.CLIENT_ID
                             WHERE yasccoza_openlink_market.client.creator_id = {$_SESSION['login_id']}
-                            GROUP BY client.CLIENT_ID, title, office
+                            GROUP BY client.CLIENT_ID, client.creator_id, title, office
                         ");
                     
                     } elseif ($_SESSION['login_type'] == 3) {
                     
                         // Employee: Define their access scope if needed
                         $qry = $conn->query("
-                                     SELECT
+                            SELECT
                                 client.*,
                                 CONCAT(pm.firstname, ' ', pm.lastname) AS entity_name,
+                                CASE WHEN MAX(COALESCE(client.orbiter_id, 0)) = 0 THEN 'Not Orbited' ELSE 'Orbited' END AS orbit_status,
                                 title,
                                 office,
                                 GROUP_CONCAT(DISTINCT CONCAT('(', client_rep.REP_NAME, ')') ORDER BY client_rep.REP_NAME ASC) AS reps
@@ -85,10 +88,13 @@ if (empty($_SESSION['csrf_token'])) {
                                 ON client.office_id = industry.INDUSTRY_ID
                             LEFT JOIN client_rep
                                 ON client_rep.CLIENT_ID = yasccoza_openlink_market.client.CLIENT_ID
-                             LEFT JOIN users
-                                ON users.creator_id = yasccoza_openlink_market.client.creator_id
-                            WHERE users.id ={$_SESSION['login_id']}
-                            GROUP BY client.CLIENT_ID, title, office;
+                            WHERE EXISTS (
+                                SELECT 1
+                                FROM users member_access
+                                WHERE member_access.id = {$_SESSION['login_id']}
+                                  AND member_access.creator_id = yasccoza_openlink_market.client.creator_id
+                            )
+                            GROUP BY client.CLIENT_ID, client.creator_id, title, office
                         ");
                     
                     } else {
@@ -98,6 +104,7 @@ if (empty($_SESSION['csrf_token'])) {
                             SELECT
                                 client.*,
                                 CONCAT(pm.firstname, ' ', pm.lastname) AS entity_name,
+                                CASE WHEN MAX(COALESCE(client.orbiter_id, 0)) = 0 THEN 'Not Orbited' ELSE 'Orbited' END AS orbit_status,
                                 title,
                                 office,
                                 GROUP_CONCAT(DISTINCT CONCAT('(', client_rep.REP_NAME, ')') ORDER BY client_rep.REP_NAME ASC) AS reps
@@ -110,7 +117,7 @@ if (empty($_SESSION['csrf_token'])) {
                                 ON client.office_id = industry.INDUSTRY_ID
                             LEFT JOIN client_rep
                                 ON client_rep.CLIENT_ID = yasccoza_openlink_market.client.CLIENT_ID
-                            GROUP BY client.CLIENT_ID, title, office
+                            GROUP BY client.CLIENT_ID, client.creator_id, title, office
                         ");
                     }
                     
@@ -124,6 +131,13 @@ if (empty($_SESSION['csrf_token'])) {
                         <?php if($_SESSION['login_type'] == 3 || $_SESSION['login_type'] == 1): ?>
                         <td style="font-weight: lighter;"><b><?php echo $row['entity_name'] ?: 'N/A' ?></b></td>
                         <?php endif; ?>
+
+                        <td style="font-weight: lighter;">
+                            <b style="color: <?php echo $row['orbit_status'] === 'Orbited' ? '#0f9d58' : '#c62828'; ?>">
+                                <?php echo $row['orbit_status']; ?>
+                            </b>
+                        </td>
+                  
                        
                         <td>Industry: <b><?php echo $row['title']; ?></b><br>Office: <b style="color:#007BFF"><?php echo $row['office']; ?></b></td>
                         <td style="font-weight: lighter;"><b><?php echo $row['reps'] ?></b></td>
@@ -146,8 +160,10 @@ if (empty($_SESSION['csrf_token'])) {
                                     $hash = hash_hmac('sha256', $payload, $secret);
                                     $encoded = base64_encode($payload . ':' . $hash);
                                     ?>
+                                     <?php if($row['orbit_status'] === 'Not Orbited'): ?>
                                     <a class="dropdown-item" href="./index.php?page=edit_client&id=<?php echo urlencode($encoded); ?>">Edit</a>
                                     <div class="dropdown-divider"></div>
+                                    <?php endif; ?>
                                     <!-- <a class="dropdown-item delete_client" href="javascript:void(0)" data-id="<?php echo $row['CLIENT_ID'] ?>">Delete</a> -->
                                          <?php endif; ?>
                                 </div>

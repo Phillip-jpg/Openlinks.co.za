@@ -41,7 +41,7 @@
 	                                if ($loginType === 1) {
 	                                    $clientSql = "SELECT CLIENT_ID, company_name FROM yasccoza_openlink_market.client ORDER BY company_name ASC";
 	                                } else {
-	                                    $clientSql = "SELECT CLIENT_ID, company_name FROM yasccoza_openlink_market.client WHERE creator_id = $loginId";
+	                                    $clientSql = "SELECT CLIENT_ID, company_name FROM yasccoza_openlink_market.client WHERE creator_id = $loginId AND orbiter_id=0";
 	                                    if ($selectedClientId > 0) {
 	                                        $clientSql .= " OR CLIENT_ID = $selectedClientId";
 	                                    }

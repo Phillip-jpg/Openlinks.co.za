@@ -240,8 +240,11 @@ $done_qry = $conn->query("
 
 <div class="col-lg-12">
     <div class="card card-outline card-success shadow-sm">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <b><?php echo $heading; ?></b>
+            <a href="./index.php?page=my_progress_calendar" class="btn btn-light btn-sm" style="background-color: #032033;">
+                <i class="fas fa-arrow-left mr-1"></i> Back to My Progress Calendar
+            </a>
         </div>
 
         <div class="card-body">
@@ -332,10 +335,10 @@ $done_qry = $conn->query("
                             <th>Job End Date</th>
                             <th>My Closed Quantity</th>
                             <th>PM Closed Quantity</th>
-                            <th>(working) Days left</th>
+                            <!-- <th>(working) Days left</th> -->
                             <th>Status</th>
                             <th>Request Done</th>
-                            <th>Request More Days</th>
+                            <!-- <th>Request More Days</th> -->
                         </tr>
                     </thead>
                     <tbody>
@@ -386,11 +389,11 @@ $done_qry = $conn->query("
                         echo "<td>" . htmlspecialchars((string)($row['my_quantities'] ?? '')) . "</td>";
                         echo "<td>" . htmlspecialchars((string)($row['pm_quantities'] ?? '')) . "</td>";
 
-                        if (($row['status'] ?? '') === 'Done' || ($row['status'] ?? '') === 'Dropped') {
-                            echo "<td style='font-weight:bold; text-align:center; color:blue'>Non</td>";
-                        } else {
-                            echo "<td style='font-weight:bold; text-align:center;'>" . htmlspecialchars((string)$days_left) . "</td>";
-                        }
+                        // if (($row['status'] ?? '') === 'Done' || ($row['status'] ?? '') === 'Dropped') {
+                        //     echo "<td style='font-weight:bold; text-align:center; color:blue'>Non</td>";
+                        // } else {
+                        //     echo "<td style='font-weight:bold; text-align:center;'>" . htmlspecialchars((string)$days_left) . "</td>";
+                        // }
 
                         // Status badge
                         echo "<td>";
@@ -424,29 +427,29 @@ $done_qry = $conn->query("
                             echo "<td><span class='badge badge-danger'>Denied</span></td>";
                         }
 
-                        // Request More Days
-                        $request_days = (int)($row['request_days'] ?? 0);
-                        if ($request_days === 0) {
-                            echo '<td>
-                                <form method="post" action="./index.php?page=save_request">
-                                    <input type="hidden" name="done" value="000">
-                                    <input type="hidden" name="login_id" value="' . $login_id . '">
-                                    <input type="hidden" name="activity_id" value="' . (int)$row['activity_id'] . '">
-                                    <input type="hidden" name="project_id" value="' . (int)$row['project_id'] . '">
-                                    <input type="hidden" name="period" value="' . $period . '">
-                                    <input type="hidden" name="where" value="' . $where . '">
-                                    <button class="badge badge-info" style="border-radius:5px;" type="submit">Request</button>
-                                </form>
-                              </td>';
-                        } elseif ($request_days === 1) {
-                            echo "<td><span class='badge badge-warning'>Requested</span></td>";
-                        } elseif ($request_days === 2) {
-                            echo "<td><span class='badge badge-success'>Job Complete</span></td>";
-                        } elseif ($request_days === 3) {
-                            echo "<td><span class='badge badge-danger'>Denied</span></td>";
-                        } else {
-                            echo "<td><span class='badge badge-success'>Granted</span></td>";
-                        }
+                        // // Request More Days
+                        // $request_days = (int)($row['request_days'] ?? 0);
+                        // if ($request_days === 0) {
+                        //     echo '<td>
+                        //         <form method="post" action="./index.php?page=save_request">
+                        //             <input type="hidden" name="done" value="000">
+                        //             <input type="hidden" name="login_id" value="' . $login_id . '">
+                        //             <input type="hidden" name="activity_id" value="' . (int)$row['activity_id'] . '">
+                        //             <input type="hidden" name="project_id" value="' . (int)$row['project_id'] . '">
+                        //             <input type="hidden" name="period" value="' . $period . '">
+                        //             <input type="hidden" name="where" value="' . $where . '">
+                        //             <button class="badge badge-info" style="border-radius:5px;" type="submit">Request</button>
+                        //         </form>
+                        //       </td>';
+                        // } elseif ($request_days === 1) {
+                        //     echo "<td><span class='badge badge-warning'>Requested</span></td>";
+                        // } elseif ($request_days === 2) {
+                        //     echo "<td><span class='badge badge-success'>Job Complete</span></td>";
+                        // } elseif ($request_days === 3) {
+                        //     echo "<td><span class='badge badge-danger'>Denied</span></td>";
+                        // } else {
+                        //     echo "<td><span class='badge badge-success'>Granted</span></td>";
+                        // }
 
                         echo "</tr>";
                     }

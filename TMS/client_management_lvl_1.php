@@ -16,7 +16,7 @@
                     <select id="client-filter" class="form-control">
                         <option value="">All</option>
                         <?php
-                        $work_qry = $conn->query("SELECT company_name FROM yasccoza_openlink_market.client");
+                        $work_qry = $conn->query("SELECT DISTINCT company_name FROM yasccoza_openlink_market.client");
                         while ($work_row = $work_qry->fetch_assoc()):
                         ?>
                             <option value="<?php echo $work_row['company_name']; ?>"><?php echo $work_row['company_name']; ?></option>

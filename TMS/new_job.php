@@ -234,7 +234,7 @@ if (isset($id) && !empty($id)) {
 	                        ON swt.Work_Team = ts_pm.team_id
 	                      WHERE ts_pm.team_members = $pmId
 	                        AND ts_me.team_members = {$_SESSION['login_id']}
-	                        AND '2026-02-27' BETWEEN swt.startweek AND swt.endweek;
+	                        AND CURDATE() BETWEEN swt.startweek AND swt.endweek;
 
 	                    ");
 	              

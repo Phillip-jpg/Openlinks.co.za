@@ -83,7 +83,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="card-body">
             
 
-        <form id="manage-days" method="post" action="./index.php?page=save_grant_days">
+        <form id="manage-days" method="post" action="./save_grant_days.php">
                 <input type="hidden" name="project_id" value="<?php echo isset($projectId) ? $projectId : '' ?>">
                 <input type="hidden" name="manager_id" value="<?php echo isset($loginId) ? $loginId: '' ?>">
                 <input type="hidden" name="activity_id" value="<?php echo isset($activityId) ? $activityId : '' ?>">
@@ -154,9 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 				</div>
 					<div class="form-group">
 					<label for="" class="control-label">Comment</label>
-					<textarea name="pm_comment" id="" cols="2" rows="2" class="form-control">
-					
-					</textarea>
+					<textarea name="pm_comment" id="pm_comment" cols="2" rows="2" class="form-control" style="text-align:left;"></textarea>
 				</div>
 				   <?php endif; ?>
 				   
@@ -170,8 +168,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <?php if ($row['request_done'] == 1): ?>
                                 <option value="Done">Done</option>
                             <?php endif; ?>
-                            <option value="On-Hold">On-Hold</option>
-                            <option value="Denied">Deny done</option>
+                            <!-- <option value="On-Hold">On-Hold</option>
+                            <option value="Denied">Deny done</option> -->
                         </select>
                      
                     </div>
@@ -205,7 +203,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 	  <?php if ($row['request_done'] == 2): ?>
                     <!-- Nothing displayed when request_done == 2 -->
                 <?php else: ?>
-                      <button class="btn btn-flat bg-gradient-primary mx-2" type="submit" form="manage-days">Save</button>
+                      <button class="btn btn-flat bg-gradient-primary mx-2" type="submit" form="manage-days" id="grant-save-btn">Save</button>
                 <?php endif; ?>
                <?php
 if (!empty($period)) {
@@ -217,7 +215,110 @@ if (!empty($period)) {
                     }
                     ?>
             </div>
+            <div id="grant-save-status" class="mt-3" style="display:none;"></div>
         </div>
     </div>
 </div>
 
+<script>
+$(function () {
+    var $form = $('#manage-days');
+    var $saveBtn = $('#grant-save-btn');
+    var $status = $('#grant-save-status');
+    var saveLabel = $.trim($saveBtn.text()) || 'Save';
+    var isSubmitting = false;
+
+    if (!$form.length || !$saveBtn.length) {
+        return;
+    }
+
+    function setSaveState(disabled, label) {
+        $saveBtn.prop('disabled', disabled).text(label);
+    }
+
+    function showStatus(type, message) {
+        var statusClass = 'alert-info';
+        if (type === 'success') {
+            statusClass = 'alert-success';
+        } else if (type === 'danger') {
+            statusClass = 'alert-danger';
+        }
+
+        $status
+            .removeClass('alert alert-info alert-success alert-danger')
+            .addClass('alert ' + statusClass)
+            .text(message)
+            .show();
+    }
+
+    $form.off('submit.grantDays').on('submit.grantDays', function (e) {
+        e.preventDefault();
+
+        if (isSubmitting) {
+            return false;
+        }
+
+        isSubmitting = true;
+        setSaveState(true, 'Saving...');
+        showStatus('info', 'Saving request, please wait...');
+
+        if (typeof start_load === 'function') {
+            start_load();
+        }
+
+        $.ajax({
+            url: $form.attr('action'),
+            method: 'POST',
+            data: $form.serialize(),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            timeout: 60000,
+            success: function (resp) {
+                var cleanResp = $.trim(String(resp || ''));
+                var normalizedResp = cleanResp.toLowerCase();
+                var isSaved =
+                    normalizedResp.indexOf('changes have been successfully made') !== -1 ||
+                    normalizedResp === 'ok';
+
+                if (isSaved) {
+                    showStatus('success', 'Changes saved successfully.');
+                    if (typeof alert_toast === 'function') {
+                        alert_toast('Changes saved successfully.', 'success');
+                    }
+                    setSaveState(true, 'Saved');
+                    $form.find('input, textarea, select').not(':hidden').prop('disabled', true);
+                    return;
+                }
+
+                var errMessage = cleanResp || 'Save failed.';
+                showStatus('danger', errMessage);
+                if (typeof alert_toast === 'function') {
+                    alert_toast(errMessage, 'danger');
+                }
+                isSubmitting = false;
+                setSaveState(false, saveLabel);
+            },
+            error: function (xhr, status) {
+                var message = status === 'timeout'
+                    ? 'Save timed out. Please try again.'
+                    : $.trim(String(xhr.responseText || 'Request failed.'));
+
+                showStatus('danger', message);
+                if (typeof alert_toast === 'function') {
+                    alert_toast(message, 'danger');
+                }
+                isSubmitting = false;
+                setSaveState(false, saveLabel);
+            },
+            complete: function () {
+                if (typeof end_load === 'function') {
+                    end_load();
+                }
+            }
+        });
+
+        return false;
+    });
+});
+</script>

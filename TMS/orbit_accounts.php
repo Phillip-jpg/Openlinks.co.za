@@ -129,7 +129,7 @@ if (!isset($conn)) {
     <div class="col-lg-12">
 	<div class="card card-outline card-success shadow-sm">
 		<div class="card-header bg-primary text-white">
-			<h4 class="card-title">People Orbit Summary</h4>
+			<h4 class="card-title">Account Orbit Summary</h4>
         
 		</div>
 		<div class="card-body">
@@ -148,8 +148,8 @@ if (!isset($conn)) {
 					    <th>Orbit_ID</th>
 						<th>Date Orbited</th>
 						<th>Orbiter</th>
-						<th>Member</th>
-						<th>Member ID</th>
+						<th>Client Orbited</th>
+						<th>Client ID</th>
 						<th>From Entity</th>
 						<th>To Entity</th>
 					</tr>
@@ -160,65 +160,50 @@ if (!isset($conn)) {
 					if($_SESSION['login_type'] == 1) {
 					    
 					    	$work_qry = $conn->query("
-                            /* MySQL 8+ (recommended): correct dedupe without relying on DISTINCT) */
-                            WITH people AS (
-                              SELECT id,
-                                     MAX(firstname) AS firstname,
-                                     MAX(lastname)  AS lastname
-                              FROM users
-                              GROUP BY id
+                            WITH all_client_rows AS (
+                                SELECT
+                                    c.client_pri_id,
+                                    c.CLIENT_ID,
+                                    c.company_name,
+                                    c.created,
+                                    c.creator_id AS to_entity_id,
+                                    c.orbiter_id,
+                                    LAG(c.creator_id) OVER (
+                                        PARTITION BY c.CLIENT_ID
+                                        ORDER BY c.client_pri_id
+                                    ) AS from_entity_id
+                                FROM yasccoza_openlink_market.client c
                             ),
-                            mother AS (
-                              SELECT x.*
-                              FROM (
-                                SELECT u0.*,
-                                       ROW_NUMBER() OVER (PARTITION BY u0.id ORDER BY u0.pri_id DESC) AS rn
-                                FROM users u0
-                                WHERE u0.orbit = 0
-                              ) x
-                              WHERE x.rn = 1
-                            ),
-                            branches AS (
-                              SELECT y.*
-                              FROM (
-                                SELECT b.*,
-                                       /* Optional: remove duplicate branch events with same member+creator+orbiter */
-                                       ROW_NUMBER() OVER (
-                                         PARTITION BY b.id, b.creator_id, b.orbiter_id
-                                         ORDER BY b.pri_id DESC
-                                       ) AS rn
-                                FROM users b
-                                WHERE b.orbit = 1
-                              ) y
-                              WHERE y.rn = 1  -- comment this line if you want every orbit=1 event, even repeats
+                            orbit_events AS (
+                                SELECT *
+                                FROM all_client_rows
+                                WHERE COALESCE(orbiter_id, 0) > 0
                             )
                             SELECT
-                              b.date_created,
-                              b.id,
-                              b.pri_id,
-                              CONCAT_WS(' ', ob.firstname, ob.lastname)  AS orbiter_name,
-                              CONCAT_WS(' ', me.firstname, me.lastname)  AS member_name,
-                              CONCAT_WS(' ', mom.firstname, mom.lastname) AS mother_creator_name, -- orbit=0 creator repeated
-                              CONCAT_WS(' ', br.firstname, br.lastname)  AS branch_creator_name   -- orbit=1 creator varies
-                            FROM branches b
-                            JOIN mother m        ON m.id = b.id
-                            JOIN people me       ON me.id = b.id
-                            LEFT JOIN people mom ON mom.id = m.creator_id
-                            LEFT JOIN people br  ON br.id = b.creator_id
-                            LEFT JOIN people ob  ON ob.id = b.orbiter_id
-                            ORDER BY me.firstname ASC, b.date_created ASC;");
+                                oe.client_pri_id,
+                                oe.created AS date_orbited,
+                                oe.CLIENT_ID,
+                                oe.company_name,
+                                CONCAT_WS(' ', ob.firstname, ob.lastname) AS orbiter_name,
+                                CONCAT_WS(' ', fe.firstname, fe.lastname) AS from_entity_name,
+                                CONCAT_WS(' ', te.firstname, te.lastname) AS to_entity_name
+                            FROM orbit_events oe
+                            LEFT JOIN users ob ON ob.id = oe.orbiter_id
+                            LEFT JOIN users fe ON fe.id = oe.from_entity_id
+                            LEFT JOIN users te ON te.id = oe.to_entity_id
+                            ORDER BY oe.client_pri_id DESC");
 					}
 					while($row=$work_qry->fetch_assoc()):
 			
 					?>
 					<tr>
-					    <td><p><?php echo ucwords($row['pri_id']) ?></p></td>
-					    <td><p><?php echo ucwords($row['date_created']) ?></p></td>
-						<td><p><?php echo ucwords($row['orbiter_name']) ?></p></td>
-						<td><p><?php echo ucwords($row['member_name']) ?></p></td>
-						<td><p><?php echo ucwords($row['id']) ?></p></td>
-						<td><p><?php echo ucwords($row['mother_creator_name']) ?></p></td>
-						<td><p><?php echo ucwords($row['branch_creator_name']) ?></p></td>
+					    <td><p><?php echo (int)$row['client_pri_id'] ?></p></td>
+					    <td><p><?php echo htmlspecialchars((string)$row['date_orbited']) ?></p></td>
+						<td><p><?php echo htmlspecialchars(ucwords((string)($row['orbiter_name'] ?: 'N/A'))) ?></p></td>
+						<td><p><?php echo htmlspecialchars(ucwords((string)$row['company_name'])) ?></p></td>
+						<td><p><?php echo (int)$row['CLIENT_ID'] ?></p></td>
+						<td><p><?php echo htmlspecialchars(ucwords((string)($row['from_entity_name'] ?: 'N/A'))) ?></p></td>
+						<td><p><?php echo htmlspecialchars(ucwords((string)($row['to_entity_name'] ?: 'N/A'))) ?></p></td>
 
                     </tr>	
 					<?php endwhile; ?>

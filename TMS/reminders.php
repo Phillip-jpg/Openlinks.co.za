@@ -215,11 +215,9 @@ $endOfWeek = $endOfWeekObj->format('Y-m-d');
                   // CHANGED: use selected PM id -> $project_manager_id
                   if ($login_type !== 1) {
                     $query = "
-                      SELECT tl.*
-                      FROM task_list tl
-                      JOIN users u ON FIND_IN_SET(tl.id, u.task_ids)
-                      WHERE u.id = $pmId
-                      ORDER BY tl.task_name;
+                      SELECT DISTINCT tl.*
+							FROM task_list tl
+							WHERE tl.creator_id = {$_SESSION['login_id']}
                     ";
                   } else {
                     $query = "
@@ -296,17 +294,6 @@ $endOfWeek = $endOfWeekObj->format('Y-m-d');
                   </select>
                 </div>
               </div>
-
-
-	          <div class="col-md-6">
-	            <div class="form-group">
-	              <label class="control-label">Trigger Time (System Time)</label>
-	              <input required type="time" class="form-control form-control-sm" autocomplete="off"
-	                name="trigger_time"
-	                value="<?php echo isset($trigger_time) ? date('H:i', strtotime($trigger_time)) : '' ?>">
-	            </div>
-	          </div>
-
 
 
       </div>
@@ -485,7 +472,7 @@ $endOfWeek = $endOfWeekObj->format('Y-m-d');
 		          alert_toast(isEdit ? 'Reminder updated successfully' : 'Reminder saved successfully',"success");
 		          setTimeout(function(){
 		            location.href = 'index.php?page=reminders_list';
-		          },1200)
+		          },300)
         } else {
           end_load();
           alert_toast(response ? response : 'Unable to save reminder', "error");

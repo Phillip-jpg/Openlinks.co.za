@@ -251,7 +251,7 @@ ORDER BY name ASC;
 									</td>
 									<td><?= e(userTypeLabel($row['type'] ?? 0)) ?></td>
 									<td><?= renderTaskNames($taskNames) ?></td>
-									<td><?= e(trim((string)($row['orbiter_id'] ?? 0)) !== '0' ? 'Yes' : 'No') ?></td>
+									<td><span style="<?= trim((string)($row['orbiter_id'] ?? 0)) !== '0' ? 'color: green; font-weight: bold;' : 'color: red; font-weight: bold;' ?>"><?= e(trim((string)($row['orbiter_id'] ?? 0)) !== '0' ? 'Yes' : 'No') ?></span></td>
 									
 									<td class="text-center">
 										<button

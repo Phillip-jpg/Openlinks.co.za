@@ -199,9 +199,12 @@ if ($qry3) {
 
 <div class="col-lg-12">
     	<div class="card card-outline card-success shadow-sm">
-		<div class="card-header bg-primary text-white">
+		<div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
 	
             <b>My Team Progress</b>
+            <a href="./index.php?page=my_teams_progress_calendar" class="btn btn-light btn-sm" style="background-color: #032033;">
+                <i class="fas fa-arrow-left mr-1"></i> Back to My Team Calendar
+            </a>
         </div>
         <div class="card-body">
             <div class="form-row mb-3">
@@ -338,7 +341,7 @@ FROM `assigned_duties`
 								<th>(working) Days left</th>
 								<th>Status</th>
                                      <th>Done Request</th>
-                                      <th>Days Request</th>
+                                      <!-- <th>Days Request</th> -->
                                 <th>Grant (DAYS/STATUS)</th>
                         </tr>
                     </thead>
@@ -433,17 +436,17 @@ FROM `assigned_duties`
                         } elseif ($row['request_done'] == 3) {
                             echo "<td><span class='badge badge-danger'>Denied</span></td>";
                         }
-                        if ($row['request_days'] == 0) {
-                            echo "<td><span class='badge badge-info'>Not Yet</span></td>";
-                        } elseif ($row['request_days'] == 1) {
-                            echo "<td><span class='badge badge-warning'>Requested</span></td>";
-                        } elseif ($row['request_days'] == 2) {
-                            echo "<td><span class='badge badge-success'>Job Complete No Days Required</span></td>";
-                        } elseif ($row['request_days'] == 3) {
-                            echo "<td><span class='badge badge-danger'>Denied</span></td>";
-                        } elseif ($row['request_days'] == 5) {
-                            echo "<td><span class='badge badge-info'>Granted</span></td>";
-                        }
+                        // if ($row['request_days'] == 0) {
+                        //     echo "<td><span class='badge badge-info'>Not Yet</span></td>";
+                        // } elseif ($row['request_days'] == 1) {
+                        //     echo "<td><span class='badge badge-warning'>Requested</span></td>";
+                        // } elseif ($row['request_days'] == 2) {
+                        //     echo "<td><span class='badge badge-success'>Job Complete No Days Required</span></td>";
+                        // } elseif ($row['request_days'] == 3) {
+                        //     echo "<td><span class='badge badge-danger'>Denied</span></td>";
+                        // } elseif ($row['request_days'] == 5) {
+                        //     echo "<td><span class='badge badge-info'>Granted</span></td>";
+                        // }
                         
                             echo '<td>
                             <form id="assign-form" method="post" action="./index.php?page=grant_days">

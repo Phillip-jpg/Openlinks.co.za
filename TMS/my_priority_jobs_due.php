@@ -3,7 +3,7 @@ include('db_connect.php');
 
 if (isset($_SESSION['login_id']) && is_numeric($_SESSION['login_id'])) {
     
-    $login_id = $_SESSION['login_id'];
+    $login_id = (int)$_SESSION['login_id'];
 
 $qry = $conn->query("SELECT DISTINCT
     pl.name AS jobname,
@@ -20,7 +20,7 @@ $qry = $conn->query("SELECT DISTINCT
     pl.end_date AS job_end_date,
     ad.activity_id,
     up.name,
-    CONCAT(u.firstname, ' ', u.lastname) AS manager,
+    TRIM(CONCAT(TRIM(u.firstname), ' ', TRIM(u.lastname))) AS manager,
     ad.duration,
     MONTHNAME(ad.start_date) AS MONTH,
     ad.start_date,
@@ -29,7 +29,7 @@ $qry = $conn->query("SELECT DISTINCT
     ad.days_left,
     ad.status,
     ts.team_name,
-    CONCAT(u1.firstname,'',u1.lastname) as ops_manager
+    TRIM(CONCAT(TRIM(u1.firstname), ' ', TRIM(u1.lastname))) as ops_manager
 FROM assigned_duties ad
 LEFT JOIN user_productivity up ON ad.activity_id = up.id
 LEFT JOIN task_list tl ON up.task_id = tl.id
@@ -92,12 +92,18 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
                 <label for="status-filter">Filter by Status:</label>
                 <select id="status-filter" class="form-control">
                     <option value="">All</option>
+                    <option value="In-progress">In-progress</option>
+                    <option value="Due Today">Due Today</option>
+                    <option value="Over Due">Over Due</option>
                     <?php
-                    $status_qry = $conn->query("SELECT DISTINCT status FROM `assigned_duties`");
+                    $status_qry = $conn->query("SELECT DISTINCT status FROM `assigned_duties` WHERE status IS NOT NULL AND status <> '' ORDER BY status");
                     while($status_row = $status_qry->fetch_assoc()):
+                        if (in_array($status_row['status'], ['In-progress', 'Due Today', 'Over Due'], true)) {
+                            continue;
+                        }
                     ?>
                         <option value="<?php echo $status_row['status']; ?>"><?php echo $status_row['status']; ?></option>
-                      
+                       
                     <?php endwhile; ?>
                
                 </select>
@@ -109,6 +115,7 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
                     <?php
                     $days_qry = $conn->query("SELECT DISTINCT 
     CASE
+        WHEN request_days = 0 THEN 'Not Yet'
         WHEN request_days = 1 THEN 'Requested'
         WHEN request_days = 2 THEN 'Job Complete'
         WHEN request_days = 3 THEN 'Denied'
@@ -136,7 +143,8 @@ endwhile;
 $done_qry = $conn->query("
    SELECT DISTINCT 
     CASE 
-        WHEN request_done = 1 THEN 'Requested'
+        WHEN request_done = 0 THEN 'Request'
+        WHEN request_done = 1 THEN 'Done Requested'
         WHEN request_done = 2 THEN 'Granted'
         WHEN request_done = 3 THEN 'Denied'
     END as done_label
@@ -183,14 +191,14 @@ endwhile;
                                      <th>Client</th>
                                        <th>Activity</th>
                                         <th>Job</th>
-                                        <th>Job Start Date</th>
+                                        <!-- <th>Job Start Date</th> -->
                                         <th>Job End Date</th>
-                                        <th>My Closed Quantity</th>
+                                        <!-- <th>My Closed Quantity</th> -->
                                         <th>PM Closed Quantity </th>
-								<th>(working) Days left</th>
+								<!-- <th>(working) Days left</th> -->
 								<th>Status</th>
 								  <th>Request Done</th>
-								<th>Request Mored Days</th>
+								<th>Request More Days</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -277,16 +285,16 @@ endwhile;
                             echo "<td>" . $row['name'] . "</td>";
                               echo "<td>" . $shortenedJobName . "</td>";
 
-                            echo "<td style='width:300px !important'>" . $row['job_start_date'] . "</td>";
+                            // echo "<td style='width:300px !important'>" . $row['job_start_date'] . "</td>";
                             echo "<td style='width:300px !important'>" . $row['job_end_date'] . "</td>";
-                            echo "<td style='width:300px !important'>" . $row['my_quantities'] . "</td>";
+                            // echo "<td style='width:300px !important'>" . $row['my_quantities'] . "</td>";
                             echo "<td style='width:300px !important'>" . $row['pm_quantities'] . "</td>";
                                  
-                                 if ($row['status'] == 'Done' || $row['status'] == 'Dropped') {
-                                    echo "<td style='font-weight:bold; text-align: center; color:blue'>Non</td>";
-                                } else {
-                                    echo "<td style='font-weight:bold; text-align: center;'>" . $days_left . "</td>";
-                                }
+                                //  if ($row['status'] == 'Done' || $row['status'] == 'Dropped') {
+                                //     echo "<td style='font-weight:bold; text-align: center; color:blue'>Non</td>";
+                                // } else {
+                                //     echo "<td style='font-weight:bold; text-align: center;'>" . $days_left . "</td>";
+                                // }
                               
                             
                             
@@ -318,46 +326,28 @@ endwhile;
                                     echo "<td><span class='badge badge-success'>Granted</span></td>";
                                 } elseif ($row['request_done'] == 3) {
                                     echo "<td><span class='badge badge-danger'>Denied</span></td>";
-                                } elseif ($row['request_done']==1){
-                                 echo "<td><span class='badge badge-warning'>Done Requested</span></td>";
-                              } elseif ($row['request_done']== 2){
-                                echo "<td><span class='badge badge-success'>Granted</span></td>";
-                             }
-                             elseif ($row['request_done']== 3){
-                                echo "<td><span class='badge badge-danger'>Denied</span></td>";
-                             }
-                             
-                             
-                         
-                             
-                             
+                                }
+                              
+                              
+                          
+                              
+                              
                               if ($row['request_days']== 0){
-                                echo '<td>
-        <form id="assign-form" method="post" action="./index.php?page=save_request">
-          <input type="hidden" name="done" value="000">
-            <input type="hidden" name="login_id" value="' . $login_id . '">
-            <input type="hidden" name="activity_id" value="' . $row['activity_id'] . '">
-            <input type="hidden" name="project_id" value="' . $row['project_id'] . '">
-               <input type="hidden" name="priority" value="priority">
-            <button class="badge badge-info" style="border-radius: 5px;" type="submit">
-                Request
-            </button>
-        </form>
-      </td>';
+                                echo "<td><span class='badge badge-info'>Not Yet</span></td>";
                               } elseif ($row['request_days']== 1){
                                  echo "<td><span class='badge badge-warning'>Requested</span></td>";
                               } elseif ($row['request_days']== 2){
                                 echo "<td><span class='badge badge-success'>Job Complete</span></td>";
-                             }
-                             elseif ($row['request_days']== 3){
+                             } elseif ($row['request_days']== 3){
                                 echo "<td><span class='badge badge-danger'>Denied</span></td>";
+                             } elseif ($row['request_days']== 5){
+                                echo "<td><span class='badge badge-success'>Granted</span></td>";
+                             } else {
+                                echo "<td></td>";
                              }
-                              elseif ($row['request_days']== 5){
-                                echo "<td><span class='badge badge-success'> Granted</span></td>";
-                             }
-                             
-                           
-                             
+                              
+                            
+                              
 
 
                
@@ -385,56 +375,42 @@ endwhile;
 
 <script>
     $(document).ready(function() {
-        // Initialize DataTable
         var dataTable = $('#list').DataTable();
 
-        // Event listener for each filter dropdown
-        $('#Days-filter').change(function() {
-            filterTable();
-        });
+        $('#Days-filter, #month-filter, #created-filter, #status-filter, #request_done').on('change', filterTable);
 
-        $('#month-filter').change(function() {
-            filterTable();
-        });
-        
+        function applyColumnFilter(colIndex, value, exactMatch) {
+            if (!value) {
+                dataTable.column(colIndex).search('');
+                return;
+            }
 
-        $('#created-filter').change(function() {
-            filterTable();
-        });
+            var safeValue = $.fn.dataTable.util.escapeRegex($.trim(value));
+            if (exactMatch) {
+                dataTable.column(colIndex).search('^' + safeValue + '$', true, false);
+            } else {
+                dataTable.column(colIndex).search(safeValue, true, false);
+            }
+        }
 
-        $('#status-filter').change(function() {
-            filterTable();
-        });
-
-        $('#request_done').change(function() {
-            filterTable();
-        });
-
-        // Function to filter the DataTable
         function filterTable() {
-            
-             
             var selectedMonth = $('#month-filter').val();
             var selectedClient = $('#created-filter').val();
             var selectedStatus = $('#status-filter').val();
             var selectedDays = $('#Days-filter').val();
             var selectedRequestDone = $('#request_done').val();
 
-            // Apply filter for each column:
-            dataTable
-                .column(1).search(selectedMonth) // Month filter on 2nd column (index 1)
-                .column(4).search(selectedClient)
-                // Client filter on 5th column (index 4)
-                .column(8).search(selectedStatus) // Status filter on 9th column (index 8)
-                .column(9).search(selectedDays) // Days Request filter on 10th column (index 9)
-                .column(10).search(selectedRequestDone) // Done Request filter on 11th column (index 10)
-                .draw(); // Redraw the table with the new filters
-        }
-    });
-</script>
+            // Table columns:
+            // 0 Job_ID, 1 Month, 2 Team Name, 3 Production Manager, 4 Team leader, 5 Client,
+            // 6 Activity, 7 Job, 8 Job Start Date, 9 Job End Date, 10 My Closed Quantity,
+            // 11 PM Closed Quantity, 12 Status, 13 Request Done, 14 Request More Days
+            applyColumnFilter(1, selectedMonth, true);
+            applyColumnFilter(5, selectedClient, true);
+            applyColumnFilter(12, selectedStatus, false);
+            applyColumnFilter(14, selectedDays, true);
+            applyColumnFilter(13, selectedRequestDone, false);
 
-<script>
-    $(document).ready(function() {
-        $('#list').dataTable();
+            dataTable.draw();
+        }
     });
 </script>

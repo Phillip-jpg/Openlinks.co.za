@@ -40,22 +40,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Check if the necessary POST parameters are set
     if (isset($_POST['login_id'], $_POST['activity_id'], $_POST['project_id'])) {
         
-        $projectId = $_POST['project_id'];
-        $loginId = $_POST['login_id']; // Assuming 'login_id' is passed as 'id'
-        $activityId = $_POST['activity_id'];
-        $pm_id = $_POST['pm_id'];
-        $done = $_POST['done'];
-        $my_quantity = $_POST['my_quantity'];
-        $my_comment=$_POST['my_comment'];
+        $projectId = (int)$_POST['project_id'];
+        $loginId = (int)$_POST['login_id']; // Assuming 'login_id' is passed as 'id'
+        $activityId = (int)$_POST['activity_id'];
+        $pm_id = isset($_POST['pm_id']) ? (int)$_POST['pm_id'] : 0;
+        $done = $_POST['done'] ?? '';
+        $my_quantity = $_POST['my_quantity'] ?? '';
+        $my_comment = $_POST['my_comment'] ?? '';
         
       
                
-            $period = $_POST['period'];
-            $where = $_POST['where'];
-            $door = $_POST['door'];
-            $priority= $_POST['priority'];
+            $period = $_POST['period'] ?? '';
+            $where = $_POST['where'] ?? '';
+            $door = $_POST['door'] ?? '';
+            $priority = $_POST['priority'] ?? '';
           
             
+            if ($pm_id <= 0) {
+                $pmLookup = $conn->query("
+                    SELECT manager_id
+                    FROM assigned_duties
+                    WHERE user_id = $loginId
+                      AND project_id = $projectId
+                      AND activity_id = $activityId
+                    LIMIT 1
+                ");
+
+                if ($pmLookup && $pmLookup->num_rows > 0) {
+                    $pmRow = $pmLookup->fetch_assoc();
+                    $pm_id = (int)($pmRow['manager_id'] ?? 0);
+                }
+            }
+
             if($done==000){
                 
                 $updateQuery = "UPDATE assigned_duties
@@ -76,15 +92,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                             project_id = $projectId AND
                                             activity_id = $activityId;";
                                             
-                $insert_notifications = "INSERT INTO pm_notifications (Member_ID, PM_ID, Job_ID, Activity_ID, Notification_Type) VALUES ($loginId, $pm_id,$projectId ,$activityId, 1)";
-                $conn->query($insert_notifications);
-                
-                $insert_notifications = "INSERT INTO member_notifications (Member_ID, PM_ID, Job_ID, Activity_ID, Notification_Type) VALUES ($loginId, $pm_id,$projectId ,$activityId, 1)";
-                $conn->query($insert_notifications);
+                if ($pm_id > 0) {
+                    $insert_notifications = "INSERT INTO pm_notifications (Member_ID, PM_ID, Job_ID, Activity_ID, Notification_Type) VALUES ($loginId, $pm_id,$projectId ,$activityId, 1)";
+                    $conn->query($insert_notifications);
+                    
+                    $insert_notifications = "INSERT INTO member_notifications (Member_ID, PM_ID, Job_ID, Activity_ID, Notification_Type) VALUES ($loginId, $pm_id,$projectId ,$activityId, 1)";
+                    $conn->query($insert_notifications);
+                }
                 
                 include 'send_email.php';
                 
                 // Get PM + Member email + job info
+                $managerFilterSql = $pm_id > 0 ? "AND ad.manager_id = $pm_id" : "";
                 $Query = $conn->query("
                     SELECT DISTINCT
                         pl.name AS jobname,
@@ -104,7 +123,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     LEFT JOIN team_schedule ts ON pl.team_ids = ts.team_id
                     LEFT JOIN users u1 ON ad.user_id = u1.id
                     WHERE ad.user_id = $loginId
-                      AND ad.manager_id = $pm_id
+                      $managerFilterSql
                       AND pl.id = $projectId
                       AND ad.activity_id = $activityId
                 ");
@@ -147,19 +166,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                         ";
                     }
-                    $data = $Query->fetch_assoc();
+                    $data = ($Query && $Query->num_rows > 0) ? $Query->fetch_assoc() : [];
 
                     // EXTRACT FIELDS
                     // ---------------------------
-                    $pm_email       = $data['manager_email'];
-                    $member_email   = $data['member_email'];
-                    $manager_name   = $data['manager'];
-                    $member_name    = $data['member'];
-                    $activity_name  = $data['activity_name'];
-                    $team_name      = $data['team_name'];
-                    $company_name   = $data['company_name'];
-                    $job_name       = $data['jobname'];
-                    $date_submitted = $data['submitted_date'];
+                    $pm_email       = (string)($data['manager_email'] ?? '');
+                    $member_email   = (string)($data['member_email'] ?? '');
+                    $manager_name   = (string)($data['manager'] ?? '');
+                    $member_name    = (string)($data['member'] ?? '');
+                    $activity_name  = (string)($data['activity_name'] ?? '');
+                    $team_name      = (string)($data['team_name'] ?? '');
+                    $company_name   = (string)($data['company_name'] ?? '');
+                    $job_name       = (string)($data['jobname'] ?? '');
+                    $date_submitted = (string)($data['submitted_date'] ?? date('Y-m-d H:i:s'));
                     
                     // ---------------------------
                     // PM EMAIL

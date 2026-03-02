@@ -2,13 +2,13 @@
 include('db_connect.php');
 
 if (isset($_SESSION['login_id']) && is_numeric($_SESSION['login_id'])) {
-    $login_id = $_SESSION['login_id'];
+    $login_id = (int)$_SESSION['login_id'];
 
     $qry = $conn->query("SELECT DISTINCT
-    CONCAT(u.firstname, ' ', u.lastname) AS fullname,
+    TRIM(CONCAT(TRIM(u.firstname), ' ', TRIM(u.lastname))) AS fullname,
     ts.team_name,
-    CONCAT(u1.firstname, '', u1.lastname) AS ops_manager,
-     CONCAT(u2.firstname, '', u2.lastname) AS project_manager,
+    TRIM(CONCAT(TRIM(u1.firstname), ' ', TRIM(u1.lastname))) AS ops_manager,
+    TRIM(CONCAT(TRIM(u2.firstname), ' ', TRIM(u2.lastname))) AS project_manager,
     c.company_name,
     pl.id,
     ad.user_id,
@@ -90,11 +90,15 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
                 <select id="member-filter" class="form-control">
                     <option value="">All</option> 
                     <?php
-                    // Corrected SQL query to fetch unique members
+                    // Members limited to rows shown in this table
                     $member_qry = $conn->query("
-                        SELECT DISTINCT CONCAT(u.firstname, ' ', u.lastname) as member
+                        SELECT DISTINCT TRIM(CONCAT(TRIM(u.firstname), ' ', TRIM(u.lastname))) AS member
                         FROM `assigned_duties` ad
                         LEFT JOIN `users` u ON ad.user_id = u.id
+                        WHERE ad.manager_id = $login_id
+                          AND (ad.request_days = 1 OR ad.request_done = 1)
+                          AND u.id IS NOT NULL
+                        ORDER BY member
                     ");
                     // Loop through the results and create options for each member
                     while($member_row = $member_qry->fetch_assoc()):
@@ -110,12 +114,18 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
                 <label for="status-filter">Filter by Status:</label>
                 <select id="status-filter" class="form-control">
                     <option value="">All</option>
+                    <option value="In-progress">In-progress</option>
+                    <option value="Due Today">Due Today</option>
+                    <option value="Over Due">Over Due</option>
                     <?php
-                    $status_qry = $conn->query("SELECT DISTINCT status FROM `assigned_duties`");
+                    $status_qry = $conn->query("SELECT DISTINCT status FROM `assigned_duties` WHERE status IS NOT NULL AND status <> '' ORDER BY status");
                     while($status_row = $status_qry->fetch_assoc()):
+                        if (in_array($status_row['status'], ['In-progress', 'Due Today', 'Over Due'], true)) {
+                            continue;
+                        }
                     ?>
                         <option value="<?php echo $status_row['status']; ?>"><?php echo $status_row['status']; ?></option>
-                      
+                       
                     <?php endwhile; ?>
                
                 </select>
@@ -128,6 +138,7 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
                     $days_qry = $conn->query("SELECT DISTINCT 
     CASE 
         WHEN request_days = 0 THEN 'Not Yet'
+        WHEN request_days = 1 THEN 'Requested'
         WHEN request_days = 2 THEN 'Job Complete No Days Required'
         WHEN request_days = 3 THEN 'Denied'
         WHEN request_days = 5 THEN 'Granted'
@@ -191,7 +202,7 @@ FROM `assigned_duties`
                                         <th>Member</th>
                                         <th>Job</th>
                                         <th>End Date</th>
-								<th>(working) Days left</th>
+								<!-- <th>(working) Days left</th> -->
 								<th>Status</th>
                                      <th>Done Request</th>
                                       <th>Days Request</th>
@@ -256,14 +267,14 @@ FROM `assigned_duties`
                            echo "<td style='width:300px !important'>" . $row['ops_manager'] . "</td>";
                       echo "<td>" . $row['company_name'] . "</td>";
                          echo "<td>" . $row['name'] . "</td>";
-                          echo "<td>" . $row['fullname'] . "</td>";
+                         echo "<td>" . trim((string)$row['fullname']) . "</td>";
                         echo "<td>" . $shortenedJobName . "</td>";
                         echo "<td>" . $end_date_formatted. "</td>";
-                        if ($row['status'] == 'Done' || $row['status'] == 'Dropped') {
-                            echo "<td style='font-weight:bold; text-align: center;'>" . $row['done_days'] . "</td>";
-                        } else {
-                            echo "<td style='font-weight:bold; text-align: center;'>" . $days_left . "</td>";
-                        }
+                        // if ($row['status'] == 'Done' || $row['status'] == 'Dropped') {
+                        //     echo "<td style='font-weight:bold; text-align: center;'>" . $row['done_days'] . "</td>";
+                        // } else {
+                        //     echo "<td style='font-weight:bold; text-align: center;'>" . $days_left . "</td>";
+                        // }
                         echo "<td>";
                         if ($row['status'] == 'Done') {
                             echo "<span class='badge badge-success'>{$row['status']}</span>";
@@ -343,53 +354,46 @@ FROM `assigned_duties`
 
 <script>
     $(document).ready(function() {
-        // Initialize DataTable
         var dataTable = $('#list').DataTable();
 
-        // Event listener for each filter dropdown
-        $('#Days-filter').change(function() {
-            filterTable();
-        });
+        $('#Days-filter, #month-filter, #member-filter, #created-filter, #status-filter, #request_done').on('change', filterTable);
 
-        $('#month-filter').change(function() {
-            filterTable();
-        });
-        
-        $('#member-filter').change(function() {
-            filterTable();
-        });
-        $('#created-filter').change(function() {
-            filterTable();
-        });
+        function applyExactColumnFilter(colIndex, value) {
+            if (!value) {
+                dataTable.column(colIndex).search('');
+                return;
+            }
 
-        $('#status-filter').change(function() {
-            filterTable();
-        });
+            var safeValue = $.fn.dataTable.util.escapeRegex(value);
+            dataTable.column(colIndex).search('^' + safeValue + '$', true, false);
+        }
 
-        $('#request_done').change(function() {
-            filterTable();
-        });
-
-        // Function to filter the DataTable
         function filterTable() {
-            
-             var selectedMember = $('#member-filter').val();
+            var selectedMember = $('#member-filter').val();
             var selectedMonth = $('#month-filter').val();
             var selectedClient = $('#created-filter').val();
             var selectedStatus = $('#status-filter').val();
             var selectedDays = $('#Days-filter').val();
             var selectedRequestDone = $('#request_done').val();
 
-            // Apply filter for each column:
-            dataTable
-                .column(1).search(selectedMonth) // Month filter on 2nd column (index 1)
-                .column(2).search(selectedMember)
-                .column(4).search(selectedClient)
-                // Client filter on 5th column (index 4)
-                .column(8).search(selectedStatus) // Status filter on 9th column (index 8)
-                .column(9).search(selectedDays) // Days Request filter on 10th column (index 9)
-                .column(10).search(selectedRequestDone) // Done Request filter on 11th column (index 10)
-                .draw(); // Redraw the table with the new filters
+            // Table columns:
+            // 0 Job_ID, 1 Month, 2 Team Name, 3 Production Manager, 4 Team leader, 5 Client,
+            // 6 Activity, 7 Member, 8 Job, 9 End Date, 10 Status, 11 Done Request, 12 Days Request, 13 Action
+            applyExactColumnFilter(1, selectedMonth);
+            if (!selectedMember) {
+                dataTable.column(7).search('');
+            } else {
+                var memberPattern = $.fn.dataTable.util
+                    .escapeRegex($.trim(selectedMember))
+                    .replace(/\s+/g, '\\s+');
+                dataTable.column(7).search(memberPattern, true, false);
+            }
+            applyExactColumnFilter(5, selectedClient);
+            applyExactColumnFilter(10, selectedStatus);
+            applyExactColumnFilter(12, selectedDays);
+            applyExactColumnFilter(11, selectedRequestDone);
+
+            dataTable.draw();
         }
     });
 </script>
