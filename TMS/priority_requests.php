@@ -53,13 +53,203 @@ ORDER BY
 }
 ?>
 
-<div class="col-lg-12">
-	<div class="card card-outline card-success shadow-sm">
-		<div class="card-header bg-primary text-white">
+<style>
+    .priority-modern {
+        --surface: #ffffff;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #dbe7f5;
+        --brand-1: #0f4c81;
+        --brand-2: #0b7db5;
+        --brand-3: #5eb3f3;
+    }
+
+    .priority-modern .priority-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+        background: var(--surface);
+        overflow: hidden;
+    }
+
+    .priority-modern .priority-header {
+        background: linear-gradient(120deg, #0f172a 0%, #1e3a5f 45%, #2563eb 100%);
+        border: 0;
+        color: #fff;
+        padding: 0.9rem 1rem;
+        font-size: 0.95rem;
+        letter-spacing: 0.02em;
+    }
+
+    .priority-modern .card-body {
+        padding: 1rem 1rem 0.9rem;
+    }
+
+    .priority-modern .priority-filters {
+        background: #f8fbff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        margin-bottom: 0.9rem;
+        padding: 0.8rem 0.65rem 0.18rem;
+    }
+
+    .priority-modern .priority-filters label {
+        color: #1e3a5f;
+        font-size: 0.73rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.28rem;
+        text-transform: uppercase;
+    }
+
+    .priority-modern .priority-filters .form-control {
+        border: 1px solid #c9dcf3;
+        border-radius: 10px;
+        color: #334155;
+        font-size: 0.82rem;
+        height: calc(2rem + 2px);
+        padding: 0.28rem 0.6rem;
+    }
+
+    .priority-modern .priority-filters .form-control:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 0.17rem rgba(96, 165, 250, 0.16);
+    }
+
+    .priority-modern .table-responsive {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+
+    .priority-modern .priority-table {
+        margin: 0;
+    }
+
+    .priority-modern .priority-table thead th {
+        background: #0f172a;
+        border: 0;
+        color: #dbeafe;
+        font-size: 0.71rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        padding: 0.65rem 0.48rem;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .priority-modern .priority-table tbody td {
+        border-top: 1px solid #edf2f7;
+        color: #334155;
+        font-size: 0.8rem;
+        vertical-align: middle !important;
+        white-space: normal;
+        word-wrap: break-word;
+        padding: 0.56rem 0.48rem;
+    }
+
+    .priority-modern .priority-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .priority-modern .priority-id {
+        color: var(--brand-2);
+        font-weight: 700;
+    }
+
+    .priority-modern .priority-team,
+    .priority-modern .priority-ops {
+        min-width: 150px;
+    }
+
+    .priority-modern .badge {
+        border-radius: 999px;
+        font-size: 0.69rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 0.37em 0.66em;
+    }
+
+    .priority-modern .grant-btn {
+        border: 0;
+        border-radius: 999px !important;
+        background: linear-gradient(125deg, #0f9f6e, #34d399);
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        padding: 0.34rem 0.76rem;
+        text-transform: uppercase;
+    }
+
+    .priority-modern .grant-btn:hover {
+        filter: brightness(0.95);
+    }
+
+    .priority-modern .dataTables_wrapper .dataTables_length label,
+    .priority-modern .dataTables_wrapper .dataTables_filter label,
+    .priority-modern .dataTables_wrapper .dataTables_info,
+    .priority-modern .dataTables_wrapper .dataTables_paginate {
+        color: #64748b;
+        font-size: 0.78rem;
+    }
+
+    .priority-modern .dataTables_wrapper .dataTables_filter input,
+    .priority-modern .dataTables_wrapper .dataTables_length select {
+        border: 1px solid #c9dcf3;
+        border-radius: 8px;
+        color: #334155;
+        font-size: 0.78rem;
+        padding: 0.2rem 0.45rem;
+    }
+
+    @media (max-width: 768px) {
+        .priority-modern .priority-filters {
+            padding: 0.7rem 0.52rem 0.12rem;
+        }
+
+        .priority-modern .priority-table thead th,
+        .priority-modern .priority-table tbody td {
+            font-size: 0.74rem;
+            padding: 0.48rem 0.36rem;
+        }
+    }
+
+    /* Readability overrides */
+    .priority-modern {
+        font-size: 0.98rem;
+    }
+
+    .priority-modern .priority-filters label {
+        font-size: 0.82rem;
+    }
+
+    .priority-modern .priority-filters .form-control {
+        font-size: 0.92rem;
+    }
+
+    .priority-modern .priority-table thead th {
+        font-size: 0.8rem;
+    }
+
+    .priority-modern .priority-table tbody td {
+        font-size: 0.9rem;
+    }
+
+    .priority-modern .badge,
+    .priority-modern .grant-btn {
+        font-size: 0.8rem;
+    }
+</style>
+
+<div class="col-lg-12 priority-modern">
+	<div class="card card-outline card-success shadow-sm priority-card">
+		<div class="card-header bg-primary text-white priority-header">
             <b>My Team Progress</b>
         </div>
         <div class="card-body">
-            <div class="form-row mb-3">
+            <div class="form-row mb-3 priority-filters">
 		    <div class="col-md-3">
                 <label for="month-filter">Filter by Month:</label>
                 <select id="month-filter" class="form-control">
@@ -177,7 +367,7 @@ FROM `assigned_duties`
          
                	</div>
             <div class="table-responsive">
-                <table class="table table-hover table-bordered table-condensed" id="list">
+                <table class="table table-hover table-bordered table-condensed priority-table" id="list">
                     <colgroup>
                         <col width="7%">
                         <col width="20%">
@@ -190,9 +380,9 @@ FROM `assigned_duties`
                         <col width="10%">
                         <col width="10%">
                     </colgroup>
-                 		<thead style="background-color:#032033 !important; color:white">
+                 		<thead>
                         <tr>
-                            <th style="width:300px ! Important">Job_ID</th>
+                            <th>Job_ID</th>
                                  <th>Month</th>
                                  <th>Team Name</th>
                                   <th>Production Manager</th>
@@ -260,11 +450,11 @@ FROM `assigned_duties`
                         }
 
                         echo "<tr>";
-                        echo "<td style='color:#428bca;font-weight:bold'>" . $row['id'] . "</td>";
+                        echo "<td class='priority-id'>" . $row['id'] . "</td>";
                          echo "<td>" . $row['MONTH'] . "</td>";
-                         echo "<td style='width:300px !important'>" . $row['team_name'] . "</td>";
+                         echo "<td class='priority-team'>" . $row['team_name'] . "</td>";
                             echo "<td>" . $row['project_manager'] . "</td>";
-                           echo "<td style='width:300px !important'>" . $row['ops_manager'] . "</td>";
+                           echo "<td class='priority-ops'>" . $row['ops_manager'] . "</td>";
                       echo "<td>" . $row['company_name'] . "</td>";
                          echo "<td>" . $row['name'] . "</td>";
                          echo "<td>" . trim((string)$row['fullname']) . "</td>";
@@ -322,7 +512,7 @@ FROM `assigned_duties`
                                 <input type="hidden" name="days_left" value="' . $days_left . '">
                                 <input type="hidden" name="project_id" value="' . $row['project_id'] . '">
                                 <input type="hidden" name="priority" value="100">
-                                <button class="badge badge-success" style="border-radius: 5px;" type="submit">
+                                <button class="badge badge-success grant-btn" type="submit">
                                     GRANT
                                 </button>
                             </form>
@@ -338,19 +528,6 @@ FROM `assigned_duties`
         </div>
     </div>
 </div>
-
-<style>
-    table p {
-        margin: unset !important;
-    }
-    table td {
-        vertical-align: middle !important;
-        white-space: normal; 
-        word-wrap: break-word;
-    }
-</style>
-
-
 
 <script>
     $(document).ready(function() {

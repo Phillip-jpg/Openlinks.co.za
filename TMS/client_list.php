@@ -164,7 +164,7 @@ if (empty($_SESSION['csrf_token'])) {
                                     <a class="dropdown-item" href="./index.php?page=edit_client&id=<?php echo urlencode($encoded); ?>">Edit</a>
                                     <div class="dropdown-divider"></div>
                                     <?php endif; ?>
-                                    <!-- <a class="dropdown-item delete_client" href="javascript:void(0)" data-id="<?php echo $row['CLIENT_ID'] ?>">Delete</a> -->
+                                     <!--<a class="dropdown-item delete_client" href="javascript:void(0)" data-id="<?php echo $row['CLIENT_ID'] ?>">Delete</a> -->
                                          <?php endif; ?>
                                 </div>
                             </div>

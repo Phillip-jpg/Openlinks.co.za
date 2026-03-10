@@ -75,12 +75,12 @@ if ($login_id > 0) {
 }
 ?>
 
-<nav class="main-header navbar navbar-expand navbar-dark" style="background: linear-gradient(135deg, #032033 0%, #04324c 100%);">
+<nav class="main-header navbar navbar-expand navbar-dark modern-topbar">
     <ul class="navbar-nav">
         <?php if (isset($_SESSION['login_id'])): ?>
             <li class="nav-item">
                 <a class="nav-link" data-widget="pushmenu" href="#">
-                    <i class="fas fa-bars" style="color:white;"></i>
+                    <i class="fas fa-bars topbar-icon"></i>
                 </a>
             </li>
         <?php endif; ?>
@@ -94,7 +94,7 @@ if ($login_id > 0) {
         <!-- MOBILE BRAND NAME -->
         <li class="nav-item d-md-none">
             <a class="nav-link" href="./">
-                <b style="color:white; font-size: 14px;">
+                <b class="mobile-brand-name">
                     <?php
                         $system_name = isset($_SESSION['system']['name']) && $_SESSION['system']['name'] !== ''
                             ? (string)$_SESSION['system']['name']
@@ -112,7 +112,7 @@ if ($login_id > 0) {
 
             <!-- QUICK ACCESS (NEXT TO BELL) -->
             <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="quickAccessDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color:white;">
+                <a class="nav-link dropdown-toggle quick-access-link" href="#" id="quickAccessDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i class="fas fa-bolt mr-1"></i>
                     <span class="d-none d-md-inline">Quick Access</span>
                 </a>
@@ -146,7 +146,7 @@ if ($login_id > 0) {
             <!-- NOTIFICATION BELL -->
             <li class="nav-item dropdown">
                 <a class="nav-link" data-toggle="dropdown" aria-expanded="false">
-                    <i class="far fa-bell" style="color:white;"></i>
+                    <i class="far fa-bell topbar-icon"></i>
                     <?php if ($notif_count > 0): ?>
                         <span class="badge badge-danger navbar-badge"><?php echo $notif_count; ?></span>
                     <?php endif; ?>
@@ -425,16 +425,16 @@ if ($login_id > 0) {
             <!-- FULL SCREEN -->
             <li class="nav-item d-none d-sm-block">
                 <a class="nav-link" data-widget="fullscreen" href="#" role="button">
-                    <i class="fas fa-expand-arrows-alt" style="color:white;"></i>
+                    <i class="fas fa-expand-arrows-alt topbar-icon"></i>
                 </a>
             </li>
 
             <!-- USER DROPDOWN -->
-            <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" aria-expanded="false">
+            <li class="nav-item dropdown topbar-user-menu">
+                <a class="nav-link topbar-user-link" data-toggle="dropdown" aria-expanded="false">
                     <div class="d-flex align-items-center">
-                        <span class="fa fa-user" style="color:white;"></span>
-                        <span class="d-none d-md-inline" style="color:white;">
+                        <span class="fa fa-user topbar-user-icon"></span>
+                        <span class="d-none d-md-inline topbar-user-name">
                             <b>
                                 &nbsp;<?php
                                     $firstName = ucwords($_SESSION['login_firstname']);
@@ -864,6 +864,227 @@ if ($login_id > 0) {
 
 /* Print styles */
 @media print { .navbar { display: none !important; } }
+</style>
+
+<style>
+/* ===== TOPBAR POLISH OVERRIDES ===== */
+.modern-topbar {
+    --topbar-1: #071b2f;
+    --topbar-2: #0d3551;
+    --topbar-3: #125078;
+}
+
+.modern-topbar.main-header.navbar {
+    background: linear-gradient(120deg, var(--topbar-1) 0%, var(--topbar-2) 54%, var(--topbar-3) 100%) !important;
+    border-bottom: 1px solid rgba(148, 197, 253, 0.25);
+    box-shadow: 0 12px 28px rgba(2, 6, 23, 0.28) !important;
+    min-height: 58px;
+    padding: 0.3rem 0.55rem;
+}
+
+.modern-topbar .navbar-nav .nav-link {
+    border-radius: 10px;
+    color: #f8fafc !important;
+    font-size: 0.84rem;
+    font-weight: 500;
+    margin: 0 0.12rem;
+    padding: 0.45rem 0.62rem !important;
+    transition: all 0.2s ease;
+}
+
+.modern-topbar .navbar-nav .nav-link:hover {
+    background: rgba(148, 197, 253, 0.2);
+    transform: translateY(-1px);
+}
+
+.modern-topbar .quick-access-link {
+    background: rgba(94, 179, 243, 0.16);
+    border: 1px solid rgba(148, 197, 253, 0.24);
+}
+
+.modern-topbar .quick-access-link:hover {
+    background: rgba(94, 179, 243, 0.28);
+}
+
+.modern-topbar .topbar-user-link {
+    background: rgba(148, 197, 253, 0.16) !important;
+    border: 1px solid rgba(148, 197, 253, 0.3) !important;
+    border-radius: 12px !important;
+    padding: 0.38rem 0.72rem !important;
+}
+
+.modern-topbar .topbar-user-link:hover {
+    background: rgba(148, 197, 253, 0.28) !important;
+}
+
+.modern-topbar .topbar-icon,
+.modern-topbar .topbar-user-icon {
+    color: #f8fafc !important;
+}
+
+.modern-topbar .mobile-brand-name,
+.modern-topbar .topbar-user-name {
+    color: #f8fafc !important;
+}
+
+.modern-topbar .mobile-brand-name {
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+}
+
+.modern-topbar .dropdown-menu {
+    border: 1px solid #d8e6f7;
+    border-radius: 14px;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+    margin-top: 0.5rem;
+    padding: 0.4rem;
+}
+
+.modern-topbar .dropdown-item {
+    border-radius: 10px;
+    color: #334155;
+    font-size: 0.82rem;
+    margin: 0;
+    padding: 0.62rem 0.78rem;
+    width: auto;
+}
+
+.modern-topbar .dropdown-item:hover {
+    background: #eff6ff;
+    color: #0f4c81;
+    transform: none;
+}
+
+.modern-topbar .dropdown-item i {
+    color: #0b7db5;
+    margin-right: 0.5rem;
+}
+
+.modern-topbar .notif-box {
+    width: min(410px, calc(100vw - 20px)) !important;
+    max-height: 470px;
+    border-radius: 16px !important;
+    border: 1px solid #d8e6f7 !important;
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.18) !important;
+    overflow-y: auto;
+}
+
+.modern-topbar .notif-box .dropdown-header {
+    background: linear-gradient(135deg, #f5faff 0%, #eaf3ff 100%);
+    border-bottom: 1px solid #deebfb;
+    color: #0f3a5f;
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    padding: 0.9rem 1rem;
+    text-transform: uppercase;
+}
+
+.modern-topbar .notif-bubble {
+    border-bottom: 1px solid #ecf2f9;
+    gap: 0.6rem;
+    padding: 0.78rem 0.9rem 0.78rem 1rem;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.modern-topbar .notif-bubble::before {
+    height: 6px;
+    left: 7px;
+    opacity: 0.7;
+    top: 16px;
+    width: 6px;
+}
+
+.modern-topbar .notif-bubble:hover {
+    background: #f8fbff;
+    border-left: 2px solid #60a5fa;
+    transform: translateX(2px);
+}
+
+.modern-topbar .notif-text {
+    color: #334155;
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.modern-topbar .notif-text b {
+    color: #0f4c81;
+}
+
+.modern-topbar .notif-text small.text-muted {
+    color: #94a3b8 !important;
+    font-size: 0.67rem;
+}
+
+.modern-topbar .notif-badge {
+    border-radius: 999px;
+    font-size: 0.56rem;
+    letter-spacing: 0.05em;
+    padding: 0.12rem 0.45rem;
+}
+
+.modern-topbar .deleteNotifBtn {
+    color: #94a3b8;
+    opacity: 0.55;
+    padding: 0.32rem 0.45rem;
+    transform: none;
+}
+
+.modern-topbar .deleteNotifBtn:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.modern-topbar .navbar-badge {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: 2px solid #0b2d47;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+}
+
+@media (max-width: 575.98px) {
+    .modern-topbar.main-header.navbar {
+        min-height: 52px;
+        padding: 0.24rem 0.4rem;
+    }
+
+    .modern-topbar .navbar-nav .nav-link {
+        font-size: 0.78rem;
+        padding: 0.36rem 0.44rem !important;
+    }
+
+    .modern-topbar .quick-access-link .d-none.d-md-inline {
+        display: none !important;
+    }
+}
+
+/* Readability overrides */
+.modern-topbar {
+    font-size: 0.98rem;
+}
+
+.modern-topbar .navbar-nav .nav-link {
+    font-size: 0.9rem;
+}
+
+.modern-topbar .mobile-brand-name,
+.modern-topbar .topbar-user-name {
+    font-size: 0.9rem;
+}
+
+.modern-topbar .dropdown-item {
+    font-size: 0.9rem;
+}
+
+.modern-topbar .notif-text {
+    font-size: 0.88rem;
+}
+
+.modern-topbar .notif-text small.text-muted {
+    font-size: 0.76rem;
+}
+
+.modern-topbar .notif-badge {
+    font-size: 0.66rem;
+}
 </style>
 
 <script>

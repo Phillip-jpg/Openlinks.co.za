@@ -1,18 +1,196 @@
-  <aside class="main-sidebar sidebar-dark-primary elevation-4" style="background-color: #032033;">
+  <style>
+    .modern-sidebar {
+      --sidebar-ink: #d7e8ff;
+      --sidebar-muted: #8fb6de;
+      --sidebar-line: rgba(143, 182, 222, 0.22);
+      --sidebar-accent-1: #0b7db5;
+      --sidebar-accent-2: #5eb3f3;
+      --sidebar-bg-1: #07192b;
+      --sidebar-bg-2: #0b2d47;
+      --sidebar-bg-3: #103a5a;
+      background: linear-gradient(180deg, var(--sidebar-bg-1) 0%, var(--sidebar-bg-2) 56%, var(--sidebar-bg-3) 100%) !important;
+      border-right: 1px solid rgba(94, 179, 243, 0.2);
+      box-shadow: 14px 0 32px rgba(2, 6, 23, 0.34) !important;
+    }
+
+    .modern-sidebar .brand-link {
+      align-items: center;
+      background: linear-gradient(180deg, rgba(94, 179, 243, 0.08), rgba(94, 179, 243, 0)) !important;
+      border-bottom: 1px solid var(--sidebar-line);
+      display: flex;
+      justify-content: center;
+      margin: 0.2rem 0.7rem 0;
+      min-height: 104px;
+      padding: 0.9rem 0.75rem 0.72rem;
+      border-radius: 14px;
+    }
+
+    .modern-sidebar .brand-logo-img {
+      width: 100%;
+      max-width: 180px;
+      max-height: 90px;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.36));
+    }
+
+    .modern-sidebar .brand-spacer {
+      height: 0.95rem;
+    }
+
+    .modern-sidebar .sidebar {
+      height: calc(100vh - 152px);
+      overflow-y: auto;
+      padding: 0.35rem 0.5rem 1.3rem;
+    }
+
+    .modern-sidebar .sidebar::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .modern-sidebar .sidebar::-webkit-scrollbar-track {
+      background: rgba(143, 182, 222, 0.16);
+      border-radius: 999px;
+    }
+
+    .modern-sidebar .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(94, 179, 243, 0.52);
+      border-radius: 999px;
+    }
+
+    .modern-sidebar .nav-sidebar > .nav-item {
+      margin-bottom: 0.18rem;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-link {
+      border-radius: 12px;
+      color: var(--sidebar-ink);
+      font-size: 0.86rem;
+      font-weight: 500;
+      margin: 0;
+      padding: 0.54rem 0.68rem;
+      transition: all 0.2s ease;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-link:hover {
+      background: rgba(94, 179, 243, 0.16);
+      color: #ffffff;
+      transform: translateX(2px);
+    }
+
+    .modern-sidebar .nav-sidebar .nav-link.active {
+      background: linear-gradient(120deg, rgba(11, 125, 181, 0.95), rgba(94, 179, 243, 0.82));
+      box-shadow: 0 8px 16px rgba(11, 125, 181, 0.28);
+      color: #ffffff !important;
+    }
+
+    .modern-sidebar .nav-sidebar .menu-open > .nav-link {
+      background: rgba(94, 179, 243, 0.14);
+      color: #ffffff;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-link p {
+      margin: 0;
+      line-height: 1.24;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-icon {
+      color: var(--sidebar-muted);
+      font-size: 0.9rem;
+      margin-right: 0.18rem;
+      text-align: center;
+      width: 1.35rem;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-link:hover .nav-icon,
+    .modern-sidebar .nav-sidebar .nav-link.active .nav-icon {
+      color: #ffffff;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-treeview {
+      border-left: 1px solid var(--sidebar-line);
+      margin: 0.25rem 0 0.55rem 0.78rem;
+      padding-left: 0.48rem;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-treeview .nav-item {
+      margin-bottom: 0.16rem;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-treeview .nav-link {
+      color: #bfd8f8;
+      font-size: 0.8rem;
+      min-height: 34px;
+      padding: 0.42rem 0.58rem;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-treeview .nav-link:hover {
+      background: rgba(94, 179, 243, 0.14);
+      color: #ffffff;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-treeview .nav-link.active {
+      background: rgba(94, 179, 243, 0.24);
+      color: #ffffff;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-treeview .nav-icon {
+      color: #89bce8;
+      font-size: 0.72rem;
+      width: 1rem;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-link > .right {
+      margin-top: 0.16rem;
+      color: #92bee7;
+    }
+
+    @media (max-width: 991.98px) {
+      .modern-sidebar .brand-link {
+        min-height: 94px;
+      }
+
+      .modern-sidebar .brand-logo-img {
+        max-height: 76px;
+      }
+
+      .modern-sidebar .sidebar {
+        height: calc(100vh - 138px);
+      }
+    }
+
+    /* Readability overrides */
+    .modern-sidebar {
+      font-size: 0.98rem;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-link {
+      font-size: 0.94rem;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-treeview .nav-link {
+      font-size: 0.89rem;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-icon {
+      font-size: 1rem;
+    }
+
+    .modern-sidebar .nav-sidebar .nav-treeview .nav-icon {
+      font-size: 0.85rem;
+    }
+  </style>
+
+  <aside class="main-sidebar sidebar-dark-primary elevation-4 modern-sidebar">
     <div class="dropdown">
-   	<a href="./" class="brand-link" style="background-color: #032033;">
+   	<a href="./" class="brand-link">
         <?php if($_SESSION['login_type'] == 1): ?>
         <?php else: ?>
         <h3 class="text-center p-0 m-0"><b></b></h3>
         <?php endif; ?>
-        <img src="opl_logo.png" alt="..." width="100%" style=" height:130px">
+        <img src="opl_logo.png" alt="OpenLinks Logo" class="brand-logo-img">
     </a>
     </div>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
+    <div class="brand-spacer"></div>
     <div class="sidebar pb-4 mb-4">
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column nav-flat" data-widget="treeview" role="menu" data-accordion="false">

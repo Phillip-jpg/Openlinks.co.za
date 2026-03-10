@@ -1619,52 +1619,167 @@ ORDER BY
 		}
 
 			function save_rep(){
-				extract($_POST);
-				$data = "";
-				$clientId = isset($CLIENT_ID) ? (int)$CLIENT_ID : 0;
-				if ($clientId <= 0) {
-					return 3; // Client not selected
+				$id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+				$repName = trim((string)($_POST['REP_NAME'] ?? ''));
+				$repEmail = trim((string)($_POST['REP_EMAIL'] ?? ''));
+				$repContact = trim((string)($_POST['REP_CONTACT'] ?? ''));
+				$role = trim((string)($_POST['ROLE'] ?? ''));
+				$userCreated = isset($_POST['USER_CREATED']) ? (int)$_POST['USER_CREATED'] : (int)($_SESSION['login_id'] ?? 0);
+
+				$rawClientIds = $_POST['CLIENT_ID'] ?? [];
+				if (!is_array($rawClientIds)) {
+					$rawClientIds = [$rawClientIds];
 				}
-				
-				// Validate and sanitize data here (e.g., using filter_input or other validation functions).
-		
-			// Construct the SQL query
-			foreach ($_POST as $k => $v) {
-				if (!in_array($k, array('id', 'csrf_token')) && !is_numeric($k)) {
-					if (empty($data)) {
-						$data .= " $k='" . $this->db->real_escape_string($v) . "' ";
+
+				$clientIds = [];
+				foreach ($rawClientIds as $rawClientId) {
+					$clientId = (int)$rawClientId;
+					if ($clientId > 0) {
+						$clientIds[$clientId] = $clientId;
+					}
+				}
+				$clientIds = array_values($clientIds);
+
+				if (empty($clientIds)) {
+					return 3;
+				}
+
+				if ($repName === '' || $repEmail === '' || $repContact === '' || $role === '') {
+					return 0;
+				}
+
+				if (!filter_var($repEmail, FILTER_VALIDATE_EMAIL)) {
+					return 0;
+				}
+
+				$repEmailEsc = $this->db->real_escape_string($repEmail);
+				$duplicateSql = "SELECT 1 FROM client_rep WHERE REP_EMAIL = '" . $repEmailEsc . "'";
+				if ($id > 0) {
+					$duplicateSql .= " AND REP_ID != " . $id;
+				}
+				$duplicateSql .= " LIMIT 1";
+
+				$duplicateCheck = $this->db->query($duplicateSql);
+				if (!$duplicateCheck) {
+					return 0;
+				}
+				if ($duplicateCheck->num_rows > 0) {
+					return 2;
+				}
+
+				$loginType = (int)($_SESSION['login_type'] ?? 0);
+				$loginId = (int)($_SESSION['login_id'] ?? 0);
+
+				// Orbited reps are view-only for entities receiving orbited accounts.
+				if ($id > 0 && $loginType === 2) {
+					$accessSql = "
+						SELECT
+							SUM(CASE WHEN c.creator_id = {$loginId} THEN 1 ELSE 0 END) AS visible_links,
+							SUM(CASE WHEN c.creator_id = {$loginId} AND COALESCE(c.orbiter_id, 0) > 0 THEN 1 ELSE 0 END) AS orbited_links
+						FROM client_rep cr
+						INNER JOIN yasccoza_openlink_market.client c
+							ON c.CLIENT_ID = cr.CLIENT_ID
+						WHERE cr.REP_ID = {$id}
+					";
+					$accessRes = $this->db->query($accessSql);
+					if (!$accessRes) {
+						return 0;
+					}
+					$accessRow = $accessRes->fetch_assoc();
+					$visibleLinks = (int)($accessRow['visible_links'] ?? 0);
+					$orbitedLinks = (int)($accessRow['orbited_links'] ?? 0);
+
+					if ($visibleLinks <= 0) {
+						return 0;
+					}
+					if ($orbitedLinks > 0) {
+						return 4;
+					}
+				}
+
+				$repNameEsc = $this->db->real_escape_string($repName);
+				$repContactEsc = $this->db->real_escape_string($repContact);
+				$roleEsc = $this->db->real_escape_string($role);
+
+				$this->db->begin_transaction();
+
+				try {
+					if ($id > 0) {
+						$currentClientsRes = $this->db->query("SELECT CLIENT_ID FROM client_rep WHERE REP_ID = " . $id);
+						if (!$currentClientsRes || $currentClientsRes->num_rows === 0) {
+							$this->db->rollback();
+							return 0;
+						}
+
+						$currentClientIds = [];
+						while ($currentClientRow = $currentClientsRes->fetch_assoc()) {
+							$currentClientId = (int)$currentClientRow['CLIENT_ID'];
+							if ($currentClientId > 0) {
+								$currentClientIds[$currentClientId] = $currentClientId;
+							}
+						}
+						$currentClientIds = array_values($currentClientIds);
+
+						$updateSql = "
+							UPDATE client_rep
+							SET REP_NAME = '" . $repNameEsc . "',
+								REP_EMAIL = '" . $repEmailEsc . "',
+								REP_CONTACT = '" . $repContactEsc . "',
+								ROLE = '" . $roleEsc . "',
+								USER_CREATED = " . $userCreated . "
+							WHERE REP_ID = " . $id;
+						if (!$this->db->query($updateSql)) {
+							throw new Exception("Failed to update rep: " . $this->db->error);
+						}
+
+						$clientsToDelete = array_values(array_diff($currentClientIds, $clientIds));
+						if (!empty($clientsToDelete)) {
+							$deleteSql = "
+								DELETE FROM client_rep
+								WHERE REP_ID = " . $id . "
+								AND CLIENT_ID IN (" . implode(',', array_map('intval', $clientsToDelete)) . ")";
+							if (!$this->db->query($deleteSql)) {
+								throw new Exception("Failed to remove rep-client links: " . $this->db->error);
+							}
+						}
+
+						$clientsToInsert = array_values(array_diff($clientIds, $currentClientIds));
+						foreach ($clientsToInsert as $clientIdToInsert) {
+							$insertLinkSql = "
+								INSERT INTO client_rep (CLIENT_ID, REP_ID, REP_NAME, REP_EMAIL, REP_CONTACT, ROLE, USER_CREATED)
+								VALUES (" . (int)$clientIdToInsert . ", " . $id . ", '" . $repNameEsc . "', '" . $repEmailEsc . "', '" . $repContactEsc . "', '" . $roleEsc . "', " . $userCreated . ")";
+							if (!$this->db->query($insertLinkSql)) {
+								throw new Exception("Failed to add rep-client link: " . $this->db->error);
+							}
+						}
 					} else {
-						$data .= ", $k='" . $this->db->real_escape_string($v) . "' ";
-					}
-				}
-			}
-		
-			// Check if email already exists
-			$check = $this->db->query("SELECT * FROM client_rep WHERE REP_EMAIL = '" . $this->db->real_escape_string($REP_EMAIL) . "'" . (!empty($id) ? " AND REP_ID != " . (int)$id : ''))->num_rows;
-			
-			if ($check > 0) {
-					
-					return 2; 
-					// Email already exists
-				} else {
-						// Insert new client or update existing client
-						if (empty($id)) {
-		
-							$sql = "INSERT INTO client_rep SET $data";
-						} else {
-							$sql = "UPDATE client_rep SET $data WHERE REP_ID = ".$id;
+						$newRepRes = $this->db->query("SELECT COALESCE(MAX(REP_ID), 0) AS max_rep_id FROM client_rep FOR UPDATE");
+						if (!$newRepRes) {
+							throw new Exception("Failed to resolve next rep id: " . $this->db->error);
 						}
-			
-					try {
-						$save = $this->db->query($sql);
-						if ($save) {
-							return 1; // Success
-						} else {
-							return 0; // Database query failed
+						$newRepRow = $newRepRes->fetch_assoc();
+						$newRepId = ((int)($newRepRow['max_rep_id'] ?? 0)) + 1;
+
+						if ($newRepId <= 0) {
+							throw new Exception("Failed to resolve new rep id.");
 						}
-					} catch (Exception $e) {
-						return $e->getMessage(); // Handle the database error
+
+						foreach ($clientIds as $clientIdToInsert) {
+							$insertClientSql = "
+								INSERT INTO client_rep (CLIENT_ID, REP_ID, REP_NAME, REP_EMAIL, REP_CONTACT, ROLE, USER_CREATED)
+								VALUES (" . (int)$clientIdToInsert . ", " . $newRepId . ", '" . $repNameEsc . "', '" . $repEmailEsc . "', '" . $repContactEsc . "', '" . $roleEsc . "', " . $userCreated . ")";
+							if (!$this->db->query($insertClientSql)) {
+								throw new Exception("Failed to create rep-client link: " . $this->db->error);
+							}
+						}
 					}
+
+					$this->db->commit();
+					return 1;
+				} catch (Throwable $e) {
+					$this->db->rollback();
+					error_log("save_rep failed: " . $e->getMessage());
+					return 0;
 				}
 			}
 	

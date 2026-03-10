@@ -69,6 +69,25 @@ if ($loginType === 2) {
 try {
     $conn->begin_transaction();
 
+    $attachmentStoredNames = [];
+    $attachmentTableCheck = $conn->query("SHOW TABLES LIKE 'reminder_attachments'");
+    $hasAttachmentsTable = ($attachmentTableCheck && $attachmentTableCheck->num_rows > 0);
+    if ($hasAttachmentsTable) {
+        $attachmentSelectStmt = $conn->prepare("SELECT stored_name FROM reminder_attachments WHERE reminder_id = ?");
+        if ($attachmentSelectStmt) {
+            $attachmentSelectStmt->bind_param('i', $id);
+            $attachmentSelectStmt->execute();
+            $attachmentRes = $attachmentSelectStmt->get_result();
+            $attachmentSelectStmt->close();
+            while ($attachmentRow = $attachmentRes->fetch_assoc()) {
+                $storedName = (string)($attachmentRow['stored_name'] ?? '');
+                if ($storedName !== '') {
+                    $attachmentStoredNames[] = $storedName;
+                }
+            }
+        }
+    }
+
     if (!$stmt->execute()) {
         throw new RuntimeException('Failed to delete parent reminder.');
     }
@@ -94,7 +113,27 @@ try {
         $childStmt->close();
     }
 
+    if (!empty($hasAttachmentsTable)) {
+        $attachmentDeleteStmt = $conn->prepare("DELETE FROM reminder_attachments WHERE reminder_id = ?");
+        if ($attachmentDeleteStmt) {
+            $attachmentDeleteStmt->bind_param('i', $id);
+            if (!$attachmentDeleteStmt->execute()) {
+                $attachmentDeleteStmt->close();
+                throw new RuntimeException('Failed to delete reminder attachment metadata.');
+            }
+            $attachmentDeleteStmt->close();
+        }
+    }
+
     $conn->commit();
+
+    foreach ($attachmentStoredNames as $attachmentStoredName) {
+        $attachmentPath = __DIR__ . DIRECTORY_SEPARATOR . 'reminder_uploads' . DIRECTORY_SEPARATOR . basename((string)$attachmentStoredName);
+        if (is_file($attachmentPath)) {
+            @unlink($attachmentPath);
+        }
+    }
+
     echo '1';
 } catch (Throwable $e) {
     $conn->rollback();

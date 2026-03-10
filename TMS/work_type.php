@@ -111,10 +111,9 @@
 						</td>	
 						<?php endif; ?>	
 						<td>
-							<p><b><?php echo ucwords(string: $row['date_created']) ?></b></p>
-			
-						</td>
-					
+                            <p><b><?php echo ucwords($row['date_created']); ?></b></p>
+                        </td>
+                        					
 						
 						<td class="text-center">
 							

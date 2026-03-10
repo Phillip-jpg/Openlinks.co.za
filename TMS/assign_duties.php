@@ -81,35 +81,35 @@ if (!empty($taskIdsString)) {
 
 
 
-<div class="col-lg-12">
+<div class="col-lg-12 assign-modern">
     <div class="mb-3">
-        <a href="./index.php?page=productivity_pipeline" class="btn btn-primary btn-sm">Back to Productivity Pipeline</a>
+        <a href="./index.php?page=productivity_pipeline" class="btn btn-primary btn-sm assign-back-btn">Back to Productivity Pipeline</a>
     </div>
-    <?php echo "<p style='font-size:20px'>Job being assigned: <span style='color:red'>" . $qry['name'] . "</span></p>"; ?>
-    <div class="card card-outline card-primary">
+    <?php echo "<p class='assign-title'>Job being assigned: <span class='assign-title-name'>" . htmlspecialchars($qry['name']) . "</span></p>"; ?>
+    <div class="card card-outline card-primary assign-card">
         <form action="save_assign.php" method="post" id="save-assign">
             <input type="hidden" name="project_id" value="<?php echo $projectId; ?>">
             <div class="row">
                 <?php 
                 if (empty($manager_id)) {
-                    echo '<div class="col-md-12">No Manager assigned to this job.</div>';
+                    echo '<div class="col-md-12 assign-empty">No Manager assigned to this job.</div>';
                 } else {
                     // Check if there are any task contents to display
                     if (!empty($taskContents)) {
                         foreach ($taskContents as $content) {
                 ?>
                 <div class="col-md-6">
-                    <p class="form-control-plaintext" style="font-size: 20px"><?php echo $content['task_name']; ?></p>
-                    <div class="form-group border" style="padding-left: 20px;">
+                    <p class="form-control-plaintext assign-task-name"><?php echo htmlspecialchars($content['task_name']); ?></p>
+                    <div class="form-group border assign-block">
                         <label for="task_name_<?php echo $content['task_id']; ?>">Activity Name</label>
-                        <p class="form-control-plaintext"><?php echo $content['name']; ?></p>
+                        <p class="form-control-plaintext"><?php echo htmlspecialchars($content['name']); ?></p>
                     </div>
 
-                    <div class="form-group border" style="padding-left: 20px;">
+                    <div class="form-group border assign-block">
                         <label for="duration_<?php echo $content['task_id']; ?>">Duration (in days)</label>
-                        <p class="form-control-plaintext"><?php echo $content['duration']; ?></p>
+                        <p class="form-control-plaintext"><?php echo htmlspecialchars($content['duration']); ?></p>
                     </div>
-                    <div class="form-group border" style="padding-left: 20px;">
+                    <div class="form-group border assign-block">
                         <label for="duration_<?php echo $content['task_id']; ?>">Description</label>
                         <p class="form-control-plaintext"><?php echo html_entity_decode($content['comment']); ?></p>
                     </div>
@@ -139,28 +139,28 @@ if (!empty($taskIdsString)) {
                         
                     }
                     ?>
-                    <div class="form-group border" style="padding-left: 20px;">
+                    <div class="form-group border assign-block">
                         <label for="resources_<?php echo $content['task_id']; ?>">Activity Resources information</label>
                         <label class="form-control-plaintext">(Required Resources: <?php echo $content['resources']; ?>)</label>
 
                         <?php if (!empty($userNames)): ?>
-                            <label style="color: #007BFF">Assigned Resources:</label>
+                            <label class="assign-resource-label">Assigned Resources:</label>
                             <?php foreach ($userNames as $userName): ?>
-                                <span><?php echo html_entity_decode($userName) . ", "; ?></span>
+                                <span class="assign-resource-chip"><?php echo html_entity_decode($userName); ?></span>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <label style="color: red">No resources assigned yet</label>
+                            <label class="assign-resource-empty">No resources assigned yet</label>
                         <?php endif; ?>
                     </div>
 
                     <?php if (!empty($userNames)): ?>
-                    <div class="card-footer border-top border-info">
+                    <div class="card-footer border-top border-info assign-footer">
                         <div class="d-flex w-100 justify-content-center align-items-center">
-                            <a class="dropdown-item view_project" style="background-color: #14A44D; color: white; width: 160px; border-radius: 3px ">Resources Assigned</a>
+                            <a class="dropdown-item view_project assign-status-btn">Resources Assigned</a>
                         </div>
                     </div>
                     <?php else: ?>
-                    <div class="card-footer border-top border-info">
+                    <div class="card-footer border-top border-info assign-footer">
                         <div class="d-flex w-100 justify-content-center align-items-center">
                             <?php
                                 $jobRef      = urlencode(base64_encode((string)$projectId));
@@ -169,21 +169,20 @@ if (!empty($taskIdsString)) {
                                 $teamRef     = urlencode(base64_encode((string)$team_id));
                                 ?>
                                 
-                                <a class="dropdown-item view_project"
-                                   style="background-color:#007BFF; color:white; width:145px; border-radius:3px"
+                                <a class="dropdown-item view_project assign-cta-btn"
                                    href="./index.php?page=save_assign&job=<?php echo $jobRef; ?>&activity=<?php echo $activityRef; ?>&task=<?php echo $taskRef; ?>&team=<?php echo $teamRef; ?>">
                                    Assign Resources
                                 </a>
                         </div>
                     </div>
                     <?php endif; ?>
-                    <hr style="border-top: 2px dashed #007BFF">
+                    <hr class="assign-divider">
                     <br>
                 </div>
                 <?php
                         }
                     } else {
-                        echo '<div class="col-md-12">No work types assigned to this job.</div>';
+                        echo '<div class="col-md-12 assign-empty">No work types assigned to this job.</div>';
                     }
                 }
                 ?>
@@ -195,107 +194,206 @@ if (!empty($taskIdsString)) {
 
 
 <style>
-    /* Card container styling */
-    .card {
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
-        padding: 20px;
-        background-color: #f8f9fa;
+    .assign-modern {
+        --surface: #ffffff;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #dbe7f5;
+        --brand-1: #0f4c81;
+        --brand-2: #0b7db5;
+        --brand-3: #5eb3f3;
     }
 
-    /* Header styling */
-    .card-header {
-        background-color: #007bff;
-        color: white;
-        font-size: 1.25rem;
-        padding: 10px 15px;
-        border-radius: 10px 10px 0 0;
-    }
-
-    /* Task name and other field styling */
-    .form-control-plaintext {
-        font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 10px;
-    }
-
-    /* Form group border styling */
-    .form-group {
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        padding: 10px;
-        margin-bottom: 15px;
-        background-color: white;
-    }
-
-    /* Label styling */
-    .form-group label {
+    .assign-modern .assign-back-btn {
+        border: 0;
+        border-radius: 999px;
+        padding: 0.42rem 0.96rem;
+        font-size: 0.79rem;
         font-weight: 600;
-        color: #555;
-        font-size: 16px;
+        background: linear-gradient(125deg, var(--brand-1), var(--brand-2));
+        box-shadow: 0 8px 18px rgba(11, 125, 181, 0.25);
     }
 
-    /* Hover effect for resources buttons */
-    .dropdown-item.view_project {
-        font-size: 16px;
-        padding: 10px;
+    .assign-modern .assign-back-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .assign-modern .assign-title {
+        color: var(--ink);
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 0.8rem;
+    }
+
+    .assign-modern .assign-title-name {
+        color: #ef4444;
+        font-weight: 700;
+    }
+
+    .assign-modern .assign-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+        margin-bottom: 0.8rem;
+        padding: 0.9rem 0.9rem 0;
+        background: linear-gradient(140deg, #ffffff 0%, #f8fbff 100%);
+    }
+
+    .assign-modern .col-md-6 {
+        margin-bottom: 1.25rem;
+    }
+
+    .assign-modern .assign-task-name {
+        color: #0f4c81;
+        font-size: 1.02rem;
+        font-weight: 700;
+        margin-bottom: 0.55rem;
+    }
+
+    .assign-modern .assign-block {
+        border: 1px solid var(--line) !important;
+        border-radius: 12px;
+        padding: 0.72rem 0.85rem !important;
+        margin-bottom: 0.68rem;
+        background: #ffffff;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .assign-modern .assign-block label {
+        color: #1e3a5f;
+        font-size: 0.76rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 0.3rem;
+    }
+
+    .assign-modern .form-control-plaintext {
+        color: #334155;
+        font-size: 0.88rem;
+        margin: 0;
+    }
+
+    .assign-modern .assign-resource-label {
+        color: #0b7db5 !important;
+        font-size: 0.78rem !important;
+        font-weight: 700 !important;
+        margin-top: 0.3rem;
+    }
+
+    .assign-modern .assign-resource-chip {
+        display: inline-flex;
+        margin: 0.18rem 0.25rem 0 0;
+        padding: 0.2rem 0.58rem;
+        border-radius: 999px;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1e3a8a;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .assign-modern .assign-resource-empty {
+        color: #dc2626 !important;
+        font-size: 0.78rem !important;
+        font-weight: 700 !important;
+    }
+
+    .assign-modern .assign-footer {
+        background: #f8fbff;
+        border-top: 1px solid #dbe7f5 !important;
+        border-radius: 12px;
+        margin-top: 0.25rem;
+        padding: 0.56rem;
+    }
+
+    .assign-modern .assign-status-btn,
+    .assign-modern .assign-cta-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        color: #fff !important;
+        font-size: 0.79rem;
+        font-weight: 600;
+        min-width: 162px;
+        padding: 0.42rem 0.96rem;
         text-align: center;
-        transition: background-color 0.3s ease;
     }
 
-    .dropdown-item.view_project:hover {
-        background-color: #0056b3;
-        color: white;
+    .assign-modern .assign-status-btn {
+        background: linear-gradient(125deg, #0f9f6e, #34d399);
     }
 
-    /* Text styling for required and assigned resources */
-    .form-control-plaintext span,
-    .form-control-plaintext label {
-        font-size: 16px;
-        color: #333;
+    .assign-modern .assign-cta-btn {
+        background: linear-gradient(125deg, var(--brand-1), var(--brand-2));
+        box-shadow: 0 8px 18px rgba(11, 125, 181, 0.25);
     }
 
-    /* Assigned resources label */
-    .form-control-plaintext label[style="color: #007BFF"] {
-        font-weight: bold;
-        margin-top: 10px;
+    .assign-modern .assign-cta-btn:hover {
+        transform: translateY(-1px);
+        color: #fff !important;
     }
 
-    /* Error message for unassigned resources */
-    .form-control-plaintext label[style="color: red"] {
-        font-size: 16px;
-        font-weight: bold;
+    .assign-modern .assign-divider {
+        border: 0;
+        border-top: 2px dashed #93c5fd;
+        margin: 0.85rem 0 0;
     }
 
-    /* Card footer */
-    .card-footer {
-        background-color: #f1f1f1;
-        padding: 10px;
-        text-align: center;
-        border-radius: 0 0 10px 10px;
+    .assign-modern .assign-empty {
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.9rem;
+        font-style: italic;
+        padding: 0.9rem 1rem;
     }
 
-    /* Dashed line divider */
-    hr {
-        border-top: 2px dashed #007BFF;
-        margin: 20px 0;
-    }
-
-    /* General spacing */
-    .col-md-6 {
-        margin-bottom: 30px;
-    }
-
-    /* Responsiveness */
     @media (max-width: 768px) {
-        .col-md-6 {
-            width: 100%;
+        .assign-modern .assign-card {
+            border-radius: 14px;
+            padding: 0.7rem 0.65rem 0;
         }
 
-        .dropdown-item.view_project {
-            width: 100%;
+        .assign-modern .assign-status-btn,
+        .assign-modern .assign-cta-btn {
+            min-width: 100%;
         }
+    }
+
+    /* Readability overrides */
+    .assign-modern {
+        font-size: 0.98rem;
+    }
+
+    .assign-modern .assign-title {
+        font-size: 1.2rem;
+    }
+
+    .assign-modern .assign-task-name {
+        font-size: 1.08rem;
+    }
+
+    .assign-modern .assign-block label {
+        font-size: 0.84rem;
+    }
+
+    .assign-modern .form-control-plaintext {
+        font-size: 0.95rem;
+    }
+
+    .assign-modern .assign-resource-label,
+    .assign-modern .assign-resource-empty,
+    .assign-modern .assign-resource-chip {
+        font-size: 0.86rem !important;
+    }
+
+    .assign-modern .assign-status-btn,
+    .assign-modern .assign-cta-btn,
+    .assign-modern .assign-back-btn {
+        font-size: 0.9rem;
     }
 </style>
 

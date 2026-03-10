@@ -19,6 +19,36 @@ if ($id > 0) {
   }
 }
 
+$existingAttachments = [];
+if ($id > 0) {
+  $attachmentTableCheck = $conn->query("SHOW TABLES LIKE 'reminder_attachments'");
+  if ($attachmentTableCheck && $attachmentTableCheck->num_rows > 0) {
+    $attachmentStmt = $conn->prepare("
+      SELECT stored_name, original_name
+      FROM reminder_attachments
+      WHERE reminder_id = ?
+      ORDER BY id DESC
+    ");
+    if ($attachmentStmt) {
+      $attachmentStmt->bind_param("i", $id);
+      if ($attachmentStmt->execute()) {
+        $attachmentResult = $attachmentStmt->get_result();
+        while ($attachmentRow = $attachmentResult->fetch_assoc()) {
+          $storedName = (string)($attachmentRow['stored_name'] ?? '');
+          if ($storedName === '') {
+            continue;
+          }
+          $existingAttachments[] = [
+            'stored_name' => $storedName,
+            'original_name' => (string)($attachmentRow['original_name'] ?? ''),
+          ];
+        }
+      }
+      $attachmentStmt->close();
+    }
+  }
+}
+
 // Selected PM (project manager) ID (drives dependent dropdown queries)
 $project_manager_id = 0;
 if (isset($manager_id) && $manager_id !== '') {
@@ -146,7 +176,7 @@ $endOfWeek = $endOfWeekObj->format('Y-m-d');
 	                <?php
 	                $officeId = isset($_GET['officeId']) ? (int)$_GET['officeId'] : (isset($selectedClientId) ? (int)$selectedClientId : 0);
                   $selectedRepId = isset($account_rep) ? (int)$account_rep : 0;
-	                $stmt = $conn->prepare("SELECT REP_ID, REP_NAME FROM client_rep WHERE CLIENT_ID = ?");
+	                $stmt = $conn->prepare("SELECT DISTINCT REP_ID, REP_NAME FROM client_rep WHERE CLIENT_ID = ? ORDER BY REP_NAME ASC");
 	                $stmt->bind_param("i", $officeId);
 
 	                if ($stmt->execute()) {
@@ -376,6 +406,40 @@ $endOfWeek = $endOfWeekObj->format('Y-m-d');
         </div>
       </div>
 
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label class="control-label">Attach File</label>
+            <input
+              type="file"
+              class="form-control-file"
+              name="attachments[]"
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.png,.jpg,.jpeg">
+            <small class="form-text text-muted">
+              Optional. You can select multiple files. Max 10MB per file. Allowed: PDF, Word, Excel, CSV, TXT, ZIP, PNG, JPG.
+            </small>
+            <?php if (!empty($existingAttachments)): ?>
+              <div class="mt-2">
+                <strong>Existing attachments:</strong>
+                <ul class="mb-0 pl-3">
+                  <?php foreach ($existingAttachments as $existingAttachment): ?>
+                    <li>
+                      <a
+                        href="<?php echo htmlspecialchars('reminder_uploads/' . $existingAttachment['stored_name']); ?>"
+                        target="_blank"
+                        rel="noopener noreferrer">
+                        <?php echo htmlspecialchars($existingAttachment['original_name'] !== '' ? $existingAttachment['original_name'] : $existingAttachment['stored_name']); ?>
+                      </a>
+                    </li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+
 		      <div class="row">
 		        <div class="col-md-10">
 		          <div class="form-group">
@@ -436,17 +500,6 @@ $endOfWeek = $endOfWeekObj->format('Y-m-d');
       loadIndustries();
     });
 	  loadIndustries();
-</script>
-
-<script>
-  function addFileInput() {
-    var fileInputContainer = document.getElementById('file-input-container');
-    var newFileInput = document.createElement('input');
-    newFileInput.type = 'file';
-    newFileInput.className = 'form-control-file';
-    newFileInput.name = 'files[]';
-    fileInputContainer.appendChild(newFileInput);
-  }
 </script>
 
 <script>

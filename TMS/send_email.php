@@ -36,7 +36,33 @@ function buildConfiguredMailer()
     return $mail;
 }
 
-function sendEmailNotification($to, $subject, $htmlMessage)
+function addEmailAttachments(PHPMailer $mail, array $attachments): void
+{
+    foreach ($attachments as $attachment) {
+        $path = '';
+        $name = '';
+
+        if (is_string($attachment)) {
+            $path = $attachment;
+        } elseif (is_array($attachment)) {
+            $path = (string)($attachment['path'] ?? '');
+            $name = (string)($attachment['name'] ?? '');
+        }
+
+        $path = trim($path);
+        if ($path === '' || !is_file($path)) {
+            continue;
+        }
+
+        if ($name !== '') {
+            $mail->addAttachment($path, $name);
+        } else {
+            $mail->addAttachment($path);
+        }
+    }
+}
+
+function sendEmailNotification($to, $subject, $htmlMessage, array $attachments = [])
 {
     static $mail = null;
 
@@ -55,6 +81,7 @@ function sendEmailNotification($to, $subject, $htmlMessage)
         $mail->addAddress($to);
         $mail->Subject = $subject;
         $mail->Body    = $htmlMessage;
+        addEmailAttachments($mail, $attachments);
 
         $mail->send();
         logMailerStatus('SENT direct to ' . $to . ' | subject: ' . $subject);

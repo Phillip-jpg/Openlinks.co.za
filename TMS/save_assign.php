@@ -133,17 +133,181 @@ if (isset($_GET['project_id']) && isset($_GET['task_id']) && isset($_GET['activi
 }
 ?>
 
+<style>
+    .save-assign-modern {
+        --surface: #ffffff;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #dbe7f5;
+        --brand-1: #0f4c81;
+        --brand-2: #0b7db5;
+        --brand-3: #5eb3f3;
+    }
+
+    .save-assign-modern .assign-shell {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+        padding: 1rem 0.95rem 0.8rem;
+    }
+
+    .save-assign-modern .activity-worktype {
+        color: var(--brand-2);
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 0.55rem;
+    }
+
+    .save-assign-modern dl,
+    .save-assign-modern dt,
+    .save-assign-modern dd {
+        margin-bottom: 0.45rem;
+    }
+
+    .save-assign-modern dt b.border-bottom.border-primary {
+        border-color: var(--line) !important;
+        color: #1e3a5f;
+        font-size: 0.74rem;
+        letter-spacing: 0.05em;
+        padding-bottom: 0.18rem;
+        text-transform: uppercase;
+    }
+
+    .save-assign-modern dd {
+        color: #334155;
+        font-size: 0.9rem;
+    }
+
+    .save-assign-modern .form-group {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+        margin-bottom: 0.7rem;
+        padding: 0.85rem 0.9rem;
+    }
+
+    .save-assign-modern .form-group label {
+        color: #1e3a5f;
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.35rem;
+        text-transform: uppercase;
+    }
+
+    .save-assign-modern .assign-help {
+        color: var(--brand-2);
+        font-size: 0.73rem;
+        font-weight: 500;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+
+    .save-assign-modern .assign-member-select {
+        border: 1px solid #c9dcf3;
+        border-radius: 10px;
+        color: #334155;
+        font-size: 0.84rem;
+        min-height: calc(2rem + 2px);
+    }
+
+    .save-assign-modern .assign-member-select:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 0.18rem rgba(96, 165, 250, 0.16);
+    }
+
+    .save-assign-modern .assign-footer {
+        background: #f8fbff;
+        border-top: 1px solid var(--line) !important;
+        border-radius: 14px;
+        margin-top: 0.5rem;
+        padding: 0.72rem 0.75rem;
+    }
+
+    .save-assign-modern .assign-save-btn {
+        background: linear-gradient(125deg, var(--brand-1), var(--brand-2));
+        border: 0;
+        border-radius: 999px;
+        box-shadow: 0 10px 20px rgba(11, 125, 181, 0.24);
+        color: #fff;
+        font-size: 0.82rem;
+        font-weight: 600;
+        min-width: 110px;
+        padding: 0.45rem 1rem;
+    }
+
+    .save-assign-modern .assign-back-btn {
+        background: #ffffff;
+        border: 1px solid #bfd8f8;
+        border-radius: 999px;
+        color: #0f4c81;
+        font-size: 0.82rem;
+        font-weight: 600;
+        min-width: 100px;
+        padding: 0.45rem 1rem;
+    }
+
+    .save-assign-modern .assign-back-btn:hover {
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    @media (max-width: 768px) {
+        .save-assign-modern .assign-shell {
+            border-radius: 14px;
+            padding: 0.75rem 0.65rem 0.6rem;
+        }
+    }
+
+    /* Readability overrides */
+    .save-assign-modern {
+        font-size: 0.98rem;
+    }
+
+    .save-assign-modern .activity-worktype {
+        font-size: 1.1rem;
+    }
+
+    .save-assign-modern dt b.border-bottom.border-primary {
+        font-size: 0.83rem;
+    }
+
+    .save-assign-modern dd {
+        font-size: 0.96rem;
+    }
+
+    .save-assign-modern .form-group label {
+        font-size: 0.84rem;
+    }
+
+    .save-assign-modern .assign-help {
+        font-size: 0.84rem;
+    }
+
+    .save-assign-modern .assign-member-select {
+        font-size: 0.94rem;
+    }
+
+    .save-assign-modern .assign-save-btn,
+    .save-assign-modern .assign-back-btn {
+        font-size: 0.9rem;
+    }
+</style>
+
 <form action="delete_assigned.php" id="assign-delete" method="post">
     <input type="hidden" name="task_id" value="<?php echo isset($taskId) ? $taskId : '' ?>">
     <input type="hidden" name="project_id" value="<?php echo isset($projectId) ? $projectId : '' ?>">
     <input type="hidden" name="activity_id" value="<?php echo isset($activityId) ? $activityId : '' ?>">
 </form>
 
-<div class="col-lg-12">
+<div class="col-lg-12 save-assign-modern">
     <form action="save_assigned_database.php" id="assign-save" method="post">
         <div class="row">
             <div class="col-md-12">
-                <div class="callout callout-info">
+                <div class="callout callout-info assign-shell">
                     <div class="col-md-12">
                         <div class="row">
                             <input type="hidden" name="task_id" value="<?php echo isset($taskId) ? $taskId : '' ?>">
@@ -158,7 +322,7 @@ if (isset($_GET['project_id']) && isset($_GET['task_id']) && isset($_GET['activi
                                 $qry = $conn->query("SELECT task_name FROM task_list WHERE id = $taskId");
                                 if ($qry) {
                                     $row = $qry->fetch_assoc();
-                                    echo "<div style='color: #007BFF; font-weight:bold'>" . $row['task_name'] . "</div>";
+                                    echo "<div class='activity-worktype'>" . htmlspecialchars($row['task_name']) . "</div>";
                                 }
                                 ?>
                                 <?php echo "<br>" ?>
@@ -177,10 +341,10 @@ if (isset($_GET['project_id']) && isset($_GET['task_id']) && isset($_GET['activi
                                 <div class="form-group">
                                     <label for="user_id" class="control-label">
                                         Select Members (Resources)
-                                        <span style="font-weight:normal; color:#007BFF">select <?php echo $resources; ?> at most</span>
+                                        <span class="assign-help">select <?php echo $resources; ?> at most</span>
                                     </label>
 
-                                    <select class="form-control form-control-sm select2" name="user_id" required>
+                                    <select class="form-control form-control-sm select2 assign-member-select" name="user_id" required>
                                         <option value="">Select Resources</option>
                                         <?php
                                         foreach ($fullNames as $userId => $fullName) {
@@ -204,17 +368,16 @@ if (isset($_GET['project_id']) && isset($_GET['task_id']) && isset($_GET['activi
         </div>
     </form>
 
-    <div class="card-footer border-top border-info">
+    <div class="card-footer border-top border-info assign-footer">
         <div class="d-flex w-100 justify-content-center align-items-center">
 	            <button
                     id="btn-save-assign"
-	                class="btn btn-flat bg-gradient-primary mx-2"
-	                style="border-radius: 3px"
+	                class="btn btn-flat bg-gradient-primary mx-2 assign-save-btn"
 	                type="submit"
 	                form="assign-save">
 	                Save
 	            </button>
-            <button class="btn btn-flat bg-gradient-secondary mx-2" style="border-radius: 3px" onclick="redirectToAssignDuties(<?php echo $projectId; ?>)">Back</button>
+            <button class="btn btn-flat bg-gradient-secondary mx-2 assign-back-btn" type="button" onclick="redirectToAssignDuties(<?php echo $projectId; ?>)">Back</button>
         </div>
     </div>
 </div>

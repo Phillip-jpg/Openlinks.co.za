@@ -89,9 +89,241 @@ if (isset($id) && !empty($id)) {
 }
 ?>
 
-<div class="col-lg-12">
-	<div class="card card-outline card-primary">
-		<div class="card-body">
+<style>
+  .new-job-modern {
+    --surface: #ffffff;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #dbe7f5;
+    --brand-1: #0f4c81;
+    --brand-2: #0b7db5;
+    --brand-3: #5eb3f3;
+  }
+
+  .new-job-modern .new-job-card {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .new-job-modern .new-job-body {
+    padding: 1rem 1rem 0.8rem;
+  }
+
+  .new-job-modern #manage-project > .row {
+    background: #f8fbff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin: 0 0 0.95rem;
+    padding: 0.78rem 0.45rem 0.2rem;
+  }
+
+  .new-job-modern .form-group {
+    margin-bottom: 0.85rem;
+  }
+
+  .new-job-modern .form-group label {
+    color: #1e3a5f;
+    font-size: 0.73rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.34rem;
+    text-transform: uppercase;
+  }
+
+  .new-job-modern .control-label {
+    color: #1e3a5f;
+  }
+
+  .new-job-modern .form-control,
+  .new-job-modern .custom-select {
+    border: 1px solid #c9dcf3;
+    border-radius: 10px;
+    color: #334155;
+    font-size: 0.84rem;
+    min-height: calc(2rem + 2px);
+  }
+
+  .new-job-modern .form-control:focus,
+  .new-job-modern .custom-select:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 0.18rem rgba(96, 165, 250, 0.16);
+  }
+
+  .new-job-modern .select2-container--default .select2-selection--single,
+  .new-job-modern .select2-container--default .select2-selection--multiple {
+    border: 1px solid #c9dcf3 !important;
+    border-radius: 10px !important;
+    min-height: 34px;
+  }
+
+  .new-job-modern .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #334155;
+    line-height: 32px;
+    font-size: 0.84rem;
+  }
+
+  .new-job-modern .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 32px;
+  }
+
+  .new-job-modern .select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: #93c5fd !important;
+    box-shadow: 0 0 0 0.18rem rgba(96, 165, 250, 0.16);
+  }
+
+  .new-job-modern .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    color: #1e3a8a;
+    font-size: 0.74rem;
+    font-weight: 600;
+    margin-top: 4px;
+    padding: 2px 8px;
+  }
+
+  .new-job-modern #file-input-container {
+    background: #f8fafc;
+    border: 1px dashed #93c5fd;
+    border-radius: 12px;
+    padding: 0.75rem 0.8rem;
+  }
+
+  .new-job-modern #file-input-container input[type="file"] {
+    font-size: 0.81rem;
+    width: 100%;
+  }
+
+  .new-job-modern .form-text.text-muted {
+    color: #64748b !important;
+    font-size: 0.75rem;
+  }
+
+  .new-job-modern .btn.btn-primary.mt-2 {
+    background: linear-gradient(125deg, var(--brand-1), var(--brand-2));
+    border: 0;
+    border-radius: 999px;
+    box-shadow: 0 8px 18px rgba(11, 125, 181, 0.24);
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0.38rem 0.88rem;
+  }
+
+  .new-job-modern .btn.btn-primary.mt-2:hover {
+    transform: translateY(-1px);
+  }
+
+  .new-job-modern .note-editor.note-frame {
+    border: 1px solid #c9dcf3;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .new-job-modern .note-toolbar {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .new-job-modern .note-editing-area .note-editable {
+    color: #334155;
+    font-size: 0.86rem;
+    min-height: 220px;
+  }
+
+  .new-job-modern .new-job-footer {
+    background: #f8fbff;
+    border-top: 1px solid var(--line) !important;
+    padding: 0.82rem 1rem;
+  }
+
+  .new-job-modern .new-job-save {
+    background: linear-gradient(125deg, var(--brand-1), var(--brand-2));
+    border: 0;
+    border-radius: 999px;
+    box-shadow: 0 10px 20px rgba(11, 125, 181, 0.24);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    min-width: 118px;
+    padding: 0.48rem 0.95rem;
+  }
+
+  .new-job-modern .new-job-back {
+    background: #ffffff;
+    border: 1px solid #bfd8f8;
+    border-radius: 999px;
+    color: #0f4c81;
+    font-size: 0.82rem;
+    font-weight: 600;
+    min-width: 102px;
+    padding: 0.48rem 0.95rem;
+  }
+
+  .new-job-modern .new-job-back:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+
+  .new-job-modern ul {
+    margin: 0.2rem 0 0;
+    padding-left: 1.1rem;
+  }
+
+  .new-job-modern ul li {
+    color: #475569;
+    font-size: 0.8rem;
+    margin-bottom: 0.24rem;
+  }
+
+  @media (max-width: 768px) {
+    .new-job-modern .new-job-body {
+      padding: 0.78rem 0.75rem 0.62rem;
+    }
+
+    .new-job-modern #manage-project > .row {
+      padding: 0.66rem 0.3rem 0.12rem;
+    }
+
+    .new-job-modern .form-group label {
+      font-size: 0.7rem;
+    }
+  }
+
+  /* Readability overrides */
+  .new-job-modern {
+    font-size: 0.98rem;
+  }
+
+  .new-job-modern .form-group label {
+    font-size: 0.82rem;
+  }
+
+  .new-job-modern .form-control,
+  .new-job-modern .custom-select,
+  .new-job-modern .select2-container--default .select2-selection--single .select2-selection__rendered,
+  .new-job-modern .select2-container--default .select2-selection--multiple,
+  .new-job-modern #file-input-container input[type="file"] {
+    font-size: 0.92rem;
+  }
+
+  .new-job-modern .form-text.text-muted,
+  .new-job-modern ul li {
+    font-size: 0.86rem;
+  }
+
+  .new-job-modern .new-job-save,
+  .new-job-modern .new-job-back,
+  .new-job-modern .btn.btn-primary.mt-2 {
+    font-size: 0.9rem;
+  }
+</style>
+
+<div class="col-lg-12 new-job-modern">
+	<div class="card card-outline card-primary new-job-card">
+		<div class="card-body new-job-body">
 			<form action="" id="manage-project" enctype="multipart/form-data">
         <input type="hidden" name="creator_id" value="<?php echo (int)$_SESSION['login_id'] ?>">
         <input type="hidden" name="id" value="<?php echo isset($id) ? $id : '' ?>">
@@ -552,7 +784,7 @@ if (isset($id) && !empty($id)) {
 	                <option value=""><?php echo $selectedClientId > 0 ? 'Select client rep' : 'Select client first'; ?></option>
 	                <?php
 	                if ($selectedClientId > 0) {
-	                  $stmt = $conn->prepare("SELECT REP_ID, REP_NAME FROM client_rep WHERE CLIENT_ID = ? ORDER BY REP_NAME ASC");
+	                  $stmt = $conn->prepare("SELECT DISTINCT REP_ID, REP_NAME FROM client_rep WHERE CLIENT_ID = ? ORDER BY REP_NAME ASC");
 	                  if ($stmt) {
 	                    $stmt->bind_param("i", $selectedClientId);
 	                    if ($stmt->execute()) {
@@ -609,10 +841,10 @@ if (isset($id) && !empty($id)) {
       </form>
     </div>
 
-    <div class="card-footer border-top border-info">
+    <div class="card-footer border-top border-info new-job-footer">
       <div class="d-flex w-100 justify-content-center align-items-center">
-        <button class="btn btn-flat bg-gradient-primary mx-2" form="manage-project">Save</button>
-        <button class="btn btn-flat bg-gradient-secondary mx-2" type="button" onclick="location.href='index.php?page=Productivity_Pipeline'">Back</button>
+        <button class="btn btn-flat bg-gradient-primary mx-2 new-job-save" form="manage-project">Save</button>
+        <button class="btn btn-flat bg-gradient-secondary mx-2 new-job-back" type="button" onclick="location.href='index.php?page=Productivity_Pipeline'">Back</button>
       </div>
     </div>
   </div>

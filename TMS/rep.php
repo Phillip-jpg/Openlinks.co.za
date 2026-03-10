@@ -3,7 +3,7 @@
     <select name="industry_id" id="industries" class="custom-select custom-select-sm">
     <?php
 $officeId = $_GET['officeId'];
-$stmt = $conn->prepare("SELECT REP_ID, REP_NAME FROM client_rep WHERE CLIENT_ID = ?");
+$stmt = $conn->prepare("SELECT DISTINCT REP_ID, REP_NAME FROM client_rep WHERE CLIENT_ID = ? ORDER BY REP_NAME ASC");
 $stmt->bind_param("i", $officeId); // Assuming INDUSTRY_ID is an integer, use "i" for integers
 
 if ($stmt->execute()) {
@@ -16,4 +16,3 @@ if ($stmt->execute()) {
 ?>
     </select>
 </div>
-

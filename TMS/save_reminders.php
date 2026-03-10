@@ -39,6 +39,246 @@ function normalize_datetime(string $value): string
     return date('Y-m-d H:i:s', $time);
 }
 
+function ensureReminderAttachmentTable(mysqli $conn): void
+{
+    $sql = "
+        CREATE TABLE IF NOT EXISTS reminder_attachments (
+            id INT(11) NOT NULL AUTO_INCREMENT,
+            reminder_id INT(11) NOT NULL,
+            stored_name VARCHAR(255) NOT NULL,
+            original_name VARCHAR(255) NOT NULL,
+            mime_type VARCHAR(150) NOT NULL DEFAULT '',
+            file_size INT(11) NOT NULL DEFAULT 0,
+            uploaded_by INT(11) NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_reminder_id (reminder_id),
+            KEY idx_uploaded_by (uploaded_by)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ";
+
+    if (!$conn->query($sql)) {
+        throw new RuntimeException('Unable to ensure reminder attachment table: ' . $conn->error);
+    }
+
+    // Backward compatibility: drop old one-file unique index if present.
+    $uqRes = $conn->query("SHOW INDEX FROM reminder_attachments WHERE Key_name = 'uq_reminder_id'");
+    if ($uqRes && $uqRes->num_rows > 0) {
+        if (!$conn->query("ALTER TABLE reminder_attachments DROP INDEX uq_reminder_id")) {
+            throw new RuntimeException('Unable to update attachment index: ' . $conn->error);
+        }
+    }
+
+    $idxRes = $conn->query("SHOW INDEX FROM reminder_attachments WHERE Key_name = 'idx_reminder_id'");
+    if (!$idxRes || $idxRes->num_rows === 0) {
+        if (!$conn->query("ALTER TABLE reminder_attachments ADD KEY idx_reminder_id (reminder_id)")) {
+            throw new RuntimeException('Unable to add reminder attachment index: ' . $conn->error);
+        }
+    }
+}
+
+function normalizeUploadedFiles(?array $files): array
+{
+    if (!is_array($files) || !isset($files['name'])) {
+        return [];
+    }
+
+    $normalized = [];
+    if (is_array($files['name'])) {
+        $count = count($files['name']);
+        for ($i = 0; $i < $count; $i++) {
+            $normalized[] = [
+                'name' => (string)($files['name'][$i] ?? ''),
+                'type' => (string)($files['type'][$i] ?? ''),
+                'tmp_name' => (string)($files['tmp_name'][$i] ?? ''),
+                'error' => (int)($files['error'][$i] ?? UPLOAD_ERR_NO_FILE),
+                'size' => (int)($files['size'][$i] ?? 0),
+            ];
+        }
+        return $normalized;
+    }
+
+    $normalized[] = [
+        'name' => (string)($files['name'] ?? ''),
+        'type' => (string)($files['type'] ?? ''),
+        'tmp_name' => (string)($files['tmp_name'] ?? ''),
+        'error' => (int)($files['error'] ?? UPLOAD_ERR_NO_FILE),
+        'size' => (int)($files['size'] ?? 0),
+    ];
+
+    return $normalized;
+}
+
+function storeReminderAttachments(mysqli $conn, int $reminderId, int $uploadedBy, ?array $files): void
+{
+    if ($reminderId <= 0) {
+        return;
+    }
+
+    $uploads = normalizeUploadedFiles($files);
+    if (empty($uploads)) {
+        return;
+    }
+
+    $hasUpload = false;
+    foreach ($uploads as $upload) {
+        if ((int)($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $hasUpload = true;
+            break;
+        }
+    }
+    if (!$hasUpload) {
+        return;
+    }
+
+    ensureReminderAttachmentTable($conn);
+
+    $storageDir = __DIR__ . DIRECTORY_SEPARATOR . 'reminder_uploads';
+    if (!is_dir($storageDir) && !mkdir($storageDir, 0775, true) && !is_dir($storageDir)) {
+        throw new RuntimeException('Unable to create reminder upload directory.');
+    }
+
+    $allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'zip', 'png', 'jpg', 'jpeg'];
+    $maxFileSize = 10 * 1024 * 1024;
+    $movedFiles = [];
+
+    $insertStmt = $conn->prepare("
+        INSERT INTO reminder_attachments (reminder_id, stored_name, original_name, mime_type, file_size, uploaded_by)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
+    if (!$insertStmt) {
+        throw new RuntimeException('Unable to prepare attachment insert query.');
+    }
+
+    try {
+        foreach ($uploads as $upload) {
+            $errorCode = (int)($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+            if ($errorCode === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+
+            if ($errorCode !== UPLOAD_ERR_OK) {
+                throw new RuntimeException('One or more attachments failed to upload.');
+            }
+
+            $tmpName = (string)($upload['tmp_name'] ?? '');
+            if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+                throw new RuntimeException('Invalid attachment upload payload.');
+            }
+
+            $fileSize = (int)($upload['size'] ?? 0);
+            if ($fileSize <= 0 || $fileSize > $maxFileSize) {
+                throw new RuntimeException('Each attachment must be between 1 byte and 10MB.');
+            }
+
+            $originalName = trim((string)($upload['name'] ?? ''));
+            $originalName = basename($originalName);
+            if ($originalName === '') {
+                throw new RuntimeException('Attachment name is invalid.');
+            }
+
+            $extension = strtolower((string)pathinfo($originalName, PATHINFO_EXTENSION));
+            if ($extension === '' || !in_array($extension, $allowedExtensions, true)) {
+                throw new RuntimeException('One or more attachment types are not allowed.');
+            }
+
+            $safeOriginalName = preg_replace('/[^a-zA-Z0-9._ -]/', '_', $originalName);
+            $safeOriginalName = trim((string)$safeOriginalName);
+            if ($safeOriginalName === '') {
+                $safeOriginalName = 'attachment.' . $extension;
+            }
+
+            $storedName = date('YmdHis') . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+            $targetPath = $storageDir . DIRECTORY_SEPARATOR . $storedName;
+            if (!move_uploaded_file($tmpName, $targetPath)) {
+                throw new RuntimeException('Unable to save uploaded attachment file.');
+            }
+            $movedFiles[] = $targetPath;
+
+            $mimeType = (string)@mime_content_type($targetPath);
+            if ($mimeType === '') {
+                $mimeType = 'application/octet-stream';
+            }
+
+            $insertStmt->bind_param('isssii', $reminderId, $storedName, $safeOriginalName, $mimeType, $fileSize, $uploadedBy);
+            if (!$insertStmt->execute()) {
+                throw new RuntimeException('Unable to save reminder attachment: ' . $insertStmt->error);
+            }
+        }
+    } catch (Throwable $e) {
+        foreach ($movedFiles as $movedFile) {
+            if (is_file($movedFile)) {
+                @unlink($movedFile);
+            }
+        }
+        $insertStmt->close();
+        throw $e;
+    }
+
+    $insertStmt->close();
+}
+
+function reminderAttachmentTableExists(mysqli $conn): bool
+{
+    static $checked = false;
+    static $exists = false;
+
+    if ($checked) {
+        return $exists;
+    }
+
+    $check = $conn->query("SHOW TABLES LIKE 'reminder_attachments'");
+    $exists = $check instanceof mysqli_result && $check->num_rows > 0;
+    $checked = true;
+
+    return $exists;
+}
+
+function fetchReminderAttachmentsForEmail(mysqli $conn, int $reminderId): array
+{
+    if ($reminderId <= 0 || !reminderAttachmentTableExists($conn)) {
+        return [];
+    }
+
+    $stmt = $conn->prepare("
+        SELECT stored_name, original_name
+        FROM reminder_attachments
+        WHERE reminder_id = ?
+        ORDER BY id ASC
+    ");
+    if (!$stmt) {
+        return [];
+    }
+
+    $stmt->bind_param('i', $reminderId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $attachments = [];
+    $storageDir = __DIR__ . DIRECTORY_SEPARATOR . 'reminder_uploads';
+    while ($row = $res->fetch_assoc()) {
+        $storedName = basename(trim((string)($row['stored_name'] ?? '')));
+        if ($storedName === '') {
+            continue;
+        }
+
+        $path = $storageDir . DIRECTORY_SEPARATOR . $storedName;
+        if (!is_file($path)) {
+            continue;
+        }
+
+        $originalName = basename(trim((string)($row['original_name'] ?? '')));
+        $attachments[] = [
+            'path' => $path,
+            'name' => $originalName !== '' ? $originalName : $storedName,
+        ];
+    }
+    $stmt->close();
+
+    return $attachments;
+}
+
 function finishAsyncResponse(string $body): void
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -351,6 +591,7 @@ function safeSendReminderCreatedEmails(mysqli $conn, array $payload): void
         return;
     }
 
+    $attachmentFiles = fetchReminderAttachmentsForEmail($conn, (int)($payload['reminder_id'] ?? 0));
     $recipients = [];
 
     $pm = fetchUserEmailName($conn, (int)$payload['who']);
@@ -401,7 +642,7 @@ function safeSendReminderCreatedEmails(mysqli $conn, array $payload): void
     $subject = 'New Reminder Created: ' . (string)$payload['reminder_name'];
     foreach ($recipients as $recipient) {
         $html = buildReminderCreatedEmailHtml((string)$recipient['name'], $emailPayload);
-        sendEmailNotification((string)$recipient['email'], $subject, $html);
+        sendEmailNotification((string)$recipient['email'], $subject, $html, $attachmentFiles);
     }
 }
 
@@ -460,6 +701,7 @@ $status = (int)($_POST['status'] ?? 1);
 $id = (int)($_POST['id'] ?? 0);
 $loginType = (int)($_SESSION['login_type'] ?? 0);
 $loginId = (int)($_SESSION['login_id'] ?? 0);
+$attachmentFiles = $_FILES['attachments'] ?? null;
 
 if (
     $who <= 0 ||
@@ -542,7 +784,7 @@ if ($id > 0) {
     }
 
     $stmt->bind_param(
-        'iiisiiisssssssssii',
+        'iiisiiissssssssii',
         $who,
         $account,
         $work_type,
@@ -610,15 +852,27 @@ if ($id > 0) {
     );
 }
 
-if ($stmt->execute()) {
-    $shouldSendCreationEmail = ($id <= 0);
-    $createdReminderId = $shouldSendCreationEmail ? (int)$stmt->insert_id : 0;
+try {
+    $conn->begin_transaction();
 
+    if (!$stmt->execute()) {
+        throw new RuntimeException('Unable to save reminder: ' . $stmt->error);
+    }
+
+    $savedReminderId = $id > 0 ? $id : (int)$stmt->insert_id;
+    storeReminderAttachments($conn, $savedReminderId, $loginId, is_array($attachmentFiles) ? $attachmentFiles : null);
+
+    $shouldSendCreationEmail = ($id <= 0);
+    $createdReminderId = $shouldSendCreationEmail ? $savedReminderId : 0;
     if ($shouldSendCreationEmail) {
         safeInsertReminderCreatedPmNotification($conn, $who, $team, $createdReminderId);
     }
 
+    $conn->commit();
+    $stmt->close();
+
     $emailPayload = [
+        'reminder_id' => $savedReminderId,
         'who' => $who,
         'account' => $account,
         'work_type' => $work_type,
@@ -636,8 +890,6 @@ if ($stmt->execute()) {
         'description' => $description,
     ];
 
-    $stmt->close();
-
     if ($shouldSendCreationEmail) {
         // Respond immediately, then continue sending emails in background.
         finishAsyncResponse('1');
@@ -653,9 +905,10 @@ if ($stmt->execute()) {
 
     echo '1';
     exit;
-} else {
+} catch (Throwable $e) {
+    @ $conn->rollback();
     http_response_code(500);
-    echo 'Unable to save reminder: ' . $stmt->error;
+    echo $e->getMessage();
 }
 
 $stmt->close();

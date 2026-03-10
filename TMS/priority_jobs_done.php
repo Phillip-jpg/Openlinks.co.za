@@ -1,16 +1,16 @@
 <?php include'db_connect.php' ?>
-<div class="col-lg-12">
-		<div class="card card-outline card-success shadow-sm">
-		<div class="card-header bg-primary text-white">
+<div class="col-lg-12 priority-done-modern">
+		<div class="card card-outline card-success shadow-sm priority-done-card">
+		<div class="card-header bg-primary text-white priority-done-header">
 	
           
 			<div class="card-tools">
-				<a class="btn btn-block btn-sm btn-default btn-flat border-primary" href="./index.php?page=new_job"><i class="fa fa-plus"></i> Add New Job</a>
+				<a class="btn btn-block btn-sm btn-default btn-flat border-primary add-job-btn" href="./index.php?page=new_job"><i class="fa fa-plus"></i> Add New Job</a>
 			</div>
            
 		</div>
 		<div class="card-body">
-		    <div class="form-row mb-3">
+		    <div class="form-row mb-3 priority-done-filters">
 		    <div class="col-md-3">
                 <label for="jobtype-filter">Filter by Job type:</label>
                 <select id="jobtype-filter" class="form-control">
@@ -86,7 +86,7 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
             	</div>
              <br>
              	<div class="table-responsive">
-				<table class="table tabe-hover table-condensed" id="list">
+				<table class="table tabe-hover table-condensed priority-done-table" id="list">
 			<colgroup>
 				<col width="5%">
 					<col width="15%">
@@ -95,7 +95,7 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 					<col width="15%">
 					<col width="15%">
 				</colgroup>
-				<thead style="background-color:#032033 !important; color:white">
+				<thead>
 					<tr>
 						<th >Job_ID</th>
 						<th>Job</th>
@@ -192,7 +192,7 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 						
 					?>
 					<tr>
-						<th class="text-center" style="color:#007bff"><?php echo ($row['id']) ?></th>
+						<th class="text-center job-id-cell"><?php echo ($row['id']) ?></th>
 						<td>
 							<p><b><?php echo ucwords($shortenedJobName) ?></b></p>
 							
@@ -214,7 +214,7 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 							
 						</td>
 						<td>
-							<p style="color:green"><b>Yes</b></p>
+							<p class="activity-level-done"><b>Yes</b></p>
 							
 						</td>
 					
@@ -244,10 +244,10 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 							
 
 						<td class="text-center">
-							<button type="button" class="btn btn-default btn-sm btn-flat border-info wave-effect text-info dropdown-toggle" data-toggle="dropdown" aria-expanded="true">
+							<button type="button" class="btn btn-default btn-sm btn-flat border-info wave-effect text-info dropdown-toggle action-btn" data-toggle="dropdown" aria-expanded="true">
 		                      Action
 		                    </button>
-		                    <div class="dropdown-menu" >
+		                    <div class="dropdown-menu action-menu" >
 		                      <a class="dropdown-item view_project" href="./index.php?page=view_job&id=<?php echo $row['id'] ?>" data-id="<?php echo $row['id'] ?>">View</a>
 						
 		                      <?php if ($_SESSION['login_type'] == 2 || $_SESSION['login_type'] == 3): ?>
@@ -258,7 +258,7 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 		                      
 		                      <hr>
 		                      
-		                      <a style="color:green" class="dropdown-item grant-done-link" href="./index.php?page=save_done_request&id=<?php echo $row['id'] ?>&manager_id=<?php echo $row['manager_id'] ?>&team_id=<?php echo $row['team_id'] ?>">Grant Done</a>
+		                      <a class="dropdown-item grant-done-link grant-done-btn" href="./index.php?page=save_done_request&id=<?php echo $row['id'] ?>&manager_id=<?php echo $row['manager_id'] ?>&team_id=<?php echo $row['team_id'] ?>">Grant Done</a>
 		                    
 		                      <!--<a class="dropdown-item delete_project" href="javascript:void(0)" data-id="<?php echo $row['id'] ?>">Delete</a>-->
 		                  <?php endif; ?>
@@ -274,11 +274,240 @@ FROM project_list pl, working_week_periods wwp WHERE wwp.start_week>= pl.date_cr
 	</div>
 </div>
 <style>
-	table p{
+	.priority-done-modern {
+		--surface: #ffffff;
+		--ink: #0f172a;
+		--muted: #64748b;
+		--line: #dbe7f5;
+		--brand-1: #0f4c81;
+		--brand-2: #0b7db5;
+		--brand-3: #5eb3f3;
+	}
+
+	.priority-done-modern .priority-done-card {
+		border: 1px solid var(--line);
+		border-radius: 18px;
+		box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+		background: var(--surface);
+		overflow: hidden;
+	}
+
+	.priority-done-modern .priority-done-header {
+		background: linear-gradient(120deg, #0f172a 0%, #1e3a5f 45%, #2563eb 100%);
+		border: 0;
+		padding: 0.86rem 1rem;
+	}
+
+	.priority-done-modern .add-job-btn {
+		background: linear-gradient(125deg, var(--brand-1), var(--brand-2));
+		border: 0 !important;
+		border-radius: 999px;
+		box-shadow: 0 8px 18px rgba(11, 125, 181, 0.28);
+		color: #fff !important;
+		font-size: 0.78rem;
+		font-weight: 600;
+		padding: 0.42rem 0.95rem;
+	}
+
+	.priority-done-modern .add-job-btn:hover {
+		transform: translateY(-1px);
+		color: #fff !important;
+	}
+
+	.priority-done-modern .card-body {
+		padding: 1rem 1rem 0.9rem;
+	}
+
+	.priority-done-modern .priority-done-filters {
+		background: #f8fbff;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		margin-bottom: 0.9rem;
+		padding: 0.8rem 0.65rem 0.2rem;
+	}
+
+	.priority-done-modern .priority-done-filters label {
+		color: #1e3a5f;
+		font-size: 0.73rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		margin-bottom: 0.28rem;
+		text-transform: uppercase;
+	}
+
+	.priority-done-modern .priority-done-filters .form-control {
+		border: 1px solid #c9dcf3;
+		border-radius: 10px;
+		color: #334155;
+		font-size: 0.82rem;
+		height: calc(2rem + 2px);
+		padding: 0.28rem 0.6rem;
+	}
+
+	.priority-done-modern .priority-done-filters .form-control:focus {
+		border-color: #93c5fd;
+		box-shadow: 0 0 0 0.17rem rgba(96, 165, 250, 0.16);
+	}
+
+	.priority-done-modern .table-responsive {
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		overflow-x: auto;
+		overflow-y: visible;
+	}
+
+	.priority-done-modern .priority-done-table {
+		margin: 0;
+	}
+
+	.priority-done-modern .priority-done-table thead th {
+		background: #0f172a;
+		border: 0;
+		color: #dbeafe;
+		font-size: 0.71rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		padding: 0.66rem 0.48rem;
+		text-transform: uppercase;
+		white-space: nowrap;
+	}
+
+	.priority-done-modern .priority-done-table tbody td,
+	.priority-done-modern .priority-done-table tbody th {
+		border-top: 1px solid #edf2f7;
+		color: #334155;
+		font-size: 0.8rem;
+		padding: 0.56rem 0.48rem;
+		vertical-align: middle !important;
+	}
+
+	.priority-done-modern .priority-done-table tbody tr:hover {
+		background: #f8fafc;
+	}
+
+	.priority-done-modern .priority-done-table p {
 		margin: unset !important;
 	}
-	table td{
-		vertical-align: middle !important
+
+	.priority-done-modern .job-id-cell {
+		color: var(--brand-2) !important;
+		font-weight: 700;
+	}
+
+	.priority-done-modern .activity-level-done {
+		color: #047857 !important;
+		font-weight: 700;
+	}
+
+	.priority-done-modern .badge {
+		border-radius: 999px;
+		font-size: 0.69rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		padding: 0.37em 0.66em;
+	}
+
+	.priority-done-modern .action-btn {
+		background: #ffffff;
+		border: 1px solid #bfd8f8 !important;
+		border-radius: 999px;
+		color: #0f4c81 !important;
+		font-size: 0.72rem;
+		font-weight: 600;
+		padding: 0.3rem 0.82rem;
+	}
+
+	.priority-done-modern .action-btn:hover {
+		background: #eff6ff;
+		border-color: #93c5fd !important;
+		color: #1d4ed8 !important;
+	}
+
+	.priority-done-modern .action-menu {
+		border: 1px solid #d8e6f7;
+		border-radius: 12px;
+		box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+		padding: 0.25rem;
+	}
+
+	.priority-done-modern .action-menu .dropdown-item {
+		border-radius: 8px;
+		color: #334155;
+		font-size: 0.8rem;
+		padding: 0.45rem 0.6rem;
+	}
+
+	.priority-done-modern .action-menu .dropdown-item:hover {
+		background: #eff6ff;
+		color: #0f4c81;
+	}
+
+	.priority-done-modern .grant-done-btn {
+		color: #0f9f6e !important;
+		font-weight: 700;
+	}
+
+	.priority-done-modern .grant-done-btn:hover {
+		background: #ecfdf3 !important;
+		color: #047857 !important;
+	}
+
+	.priority-done-modern .dataTables_wrapper .dataTables_length label,
+	.priority-done-modern .dataTables_wrapper .dataTables_filter label,
+	.priority-done-modern .dataTables_wrapper .dataTables_info,
+	.priority-done-modern .dataTables_wrapper .dataTables_paginate {
+		color: #64748b;
+		font-size: 0.78rem;
+	}
+
+	.priority-done-modern .dataTables_wrapper .dataTables_filter input,
+	.priority-done-modern .dataTables_wrapper .dataTables_length select {
+		border: 1px solid #c9dcf3;
+		border-radius: 8px;
+		color: #334155;
+		font-size: 0.78rem;
+		padding: 0.2rem 0.45rem;
+	}
+
+	@media (max-width: 768px) {
+		.priority-done-modern .priority-done-filters {
+			padding: 0.7rem 0.52rem 0.12rem;
+		}
+
+		.priority-done-modern .priority-done-table thead th,
+		.priority-done-modern .priority-done-table tbody td,
+		.priority-done-modern .priority-done-table tbody th {
+			font-size: 0.74rem;
+			padding: 0.48rem 0.36rem;
+		}
+	}
+
+	/* Readability overrides */
+	.priority-done-modern {
+		font-size: 0.98rem;
+	}
+
+	.priority-done-modern .priority-done-filters label {
+		font-size: 0.82rem;
+	}
+
+	.priority-done-modern .priority-done-filters .form-control {
+		font-size: 0.92rem;
+	}
+
+	.priority-done-modern .priority-done-table thead th {
+		font-size: 0.8rem;
+	}
+
+	.priority-done-modern .priority-done-table tbody td,
+	.priority-done-modern .priority-done-table tbody th {
+		font-size: 0.9rem;
+	}
+
+	.priority-done-modern .badge,
+	.priority-done-modern .action-btn,
+	.priority-done-modern .action-menu .dropdown-item {
+		font-size: 0.82rem;
 	}
 </style>
 <script>

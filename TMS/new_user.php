@@ -23,13 +23,14 @@ $fieldReadonly = $worktypeOnlyEdit ? 'readonly' : '';
 $fieldDisabled = $worktypeOnlyEdit ? 'disabled' : '';
 
 ?>
-<div class="col-lg-12">
-	<div class="card">
-		<div class="card-body">
-			<form action="save_member_worktype.php" id="manage_user">
+<div class="col-lg-12 new-user-page">
+	<div class="card user-card">
+		<div class="card-body user-card-body">
+			<form action="save_member_worktype.php" id="manage_user" class="user-form">
 				<input type="hidden" name="id" value="<?php echo isset($id) ? $id : '' ?>">
 				<input type="hidden" name="creator_id" value="<?php echo isset($_SESSION['login_id']) ? $_SESSION['login_id'] : '' ?>">
 				<input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+				<div id="msg" class="form-feedback"></div>
 
 				<div class="row">
 						<?php if ($worktypeOnlyEdit): ?>
@@ -103,12 +104,12 @@ $fieldDisabled = $worktypeOnlyEdit ? 'disabled' : '';
 						<div class="form-group">
 							<label class="control-label">Email</label>
 							<input type="email" class="form-control form-control-sm" name="email" required value="<?php echo isset($email) ? $email : '' ?>" <?php echo $fieldReadonly; ?>>
-							<small id="#msg"></small>
+							<small class="field-note"></small>
 						</div>
 						<div class="form-group">
 							<label class="control-label">Phone</label>
 							<input type="number" class="form-control form-control-sm" name="number" required value="<?php echo isset($number) ? $number : '' ?>" <?php echo $fieldReadonly; ?>>
-							<small id="#msg"></small>
+							<small class="field-note"></small>
 						</div>
 						<div class="form-group">
 							<label class="control-label">Password</label>
@@ -171,20 +172,185 @@ $fieldDisabled = $worktypeOnlyEdit ? 'disabled' : '';
 </div>
 				<hr>
 				<div class="col-lg-12 text-right justify-content-center d-flex">
-					<button class="btn btn-primary mr-2">Save</button>
-					<button class="btn btn-secondary" type="button" onclick="location.href = 'index.php?page=user_list'">Back</button>
+					<button class="btn btn-primary mr-2 btn-save">Save</button>
+					<button class="btn btn-secondary btn-back" type="button" onclick="location.href = 'index.php?page=user_list'">Back</button>
 				</div>
 			</form>
 		</div>
 	</div>
 </div>
 <style>
-	img#cimg{
-		height: 15vh;
-		width: 15vh;
-		object-fit: cover;
-		border-radius: 100% 100%;
-	}
+.new-user-page {
+    --bg-1: #f5f9ff;
+    --bg-2: #eaf3ff;
+    --surface: #ffffff;
+    --line: #d7e4f5;
+    --ink: #10263f;
+    --muted: #5f7185;
+    --accent-1: #1c79b8;
+    --accent-2: #31a2de;
+    --accent-3: #f2bf63;
+    font-size: 16px;
+    padding: 0.4rem 0.25rem 0.2rem;
+}
+
+.new-user-page .user-card {
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--surface) 20%);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(16, 38, 63, 0.09);
+    overflow: hidden;
+}
+
+.new-user-page .user-card-body {
+    padding: 1.15rem 1.15rem 1rem;
+}
+
+.new-user-page .form-group {
+    margin-bottom: 0.95rem;
+}
+
+.new-user-page label.control-label {
+    color: var(--ink);
+    font-size: 0.98rem;
+    font-weight: 650;
+    margin-bottom: 0.42rem;
+}
+
+.new-user-page .form-control,
+.new-user-page .custom-select,
+.new-user-page .custom-file-label {
+    background: #f8fbff;
+    border: 1px solid #c5d8ef;
+    border-radius: 11px;
+    color: var(--ink);
+    font-size: 0.98rem;
+    min-height: 44px;
+    padding: 0.56rem 0.74rem;
+}
+
+.new-user-page .custom-file {
+    height: 44px;
+}
+
+.new-user-page .custom-file-input:focus ~ .custom-file-label,
+.new-user-page .form-control:focus,
+.new-user-page .custom-select:focus {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 0.2rem rgba(49, 162, 222, 0.18);
+}
+
+.new-user-page .custom-file-label::after {
+    background: linear-gradient(120deg, var(--accent-1), var(--accent-2));
+    border: 0;
+    border-radius: 0 11px 11px 0;
+    color: #ffffff;
+    font-size: 0.9rem;
+    height: 42px;
+    line-height: 1.75rem;
+}
+
+.new-user-page .field-note {
+    color: var(--muted);
+    display: block;
+    font-size: 0.86rem;
+    min-height: 0.86rem;
+    margin-top: 0.2rem;
+}
+
+.new-user-page .alert-info {
+    background: linear-gradient(120deg, rgba(49, 162, 222, 0.14), rgba(49, 162, 222, 0.05));
+    border: 1px solid rgba(49, 162, 222, 0.35);
+    border-radius: 11px;
+    color: #174364;
+    font-size: 0.95rem;
+}
+
+.new-user-page .form-feedback {
+    margin-bottom: 0.82rem;
+}
+
+.new-user-page .form-feedback .alert {
+    border-radius: 11px;
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+.new-user-page img#cimg {
+    background: #ffffff;
+    border: 4px solid rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    box-shadow: 0 10px 24px rgba(16, 38, 63, 0.18);
+    height: 136px;
+    object-fit: cover;
+    width: 136px;
+}
+
+.new-user-page hr {
+    border-top: 1px solid #d9e5f3;
+    margin: 1.1rem 0 0.95rem;
+}
+
+.new-user-page .btn {
+    border-radius: 11px;
+    font-size: 0.98rem;
+    font-weight: 650;
+    min-width: 122px;
+    padding: 0.48rem 0.9rem;
+}
+
+.new-user-page .btn-save {
+    background: linear-gradient(120deg, var(--accent-1), var(--accent-2));
+    border: none;
+    box-shadow: 0 8px 18px rgba(28, 121, 184, 0.28);
+}
+
+.new-user-page .btn-save:hover {
+    background: linear-gradient(120deg, #186ba2, #2c92c8);
+}
+
+.new-user-page .btn-back {
+    background: #e9f1fb;
+    border: 1px solid #c3d6ec;
+    color: #244866;
+}
+
+.new-user-page .btn-back:hover {
+    background: #dceafb;
+    color: #1f3d57;
+}
+
+.new-user-page .select2-container .select2-selection--multiple {
+    background: #f8fbff;
+    border: 1px solid #c5d8ef;
+    border-radius: 11px;
+    min-height: 44px;
+}
+
+.new-user-page .select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 0.2rem rgba(49, 162, 222, 0.18);
+}
+
+.new-user-page .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background: #d7ebfa;
+    border: 1px solid #bcd9f3;
+    border-radius: 999px;
+    color: #15324d;
+    font-size: 0.86rem;
+    font-weight: 600;
+    padding: 0.12rem 0.52rem;
+}
+
+@media (max-width: 768px) {
+    .new-user-page .user-card-body {
+        padding: 0.95rem 0.82rem 0.85rem;
+    }
+    .new-user-page img#cimg {
+        height: 120px;
+        width: 120px;
+    }
+}
 </style>
 
 <script>

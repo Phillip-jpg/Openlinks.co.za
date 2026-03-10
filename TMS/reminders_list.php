@@ -16,6 +16,25 @@ if ($loginType === 2) {
     $whereSql = "WHERE r.who = {$loginId}";
 }
 
+$hasReminderAttachments = false;
+$attachmentTableCheck = $conn->query("SHOW TABLES LIKE 'reminder_attachments'");
+if ($attachmentTableCheck && $attachmentTableCheck->num_rows > 0) {
+    $hasReminderAttachments = true;
+}
+
+$attachmentSelectSql = $hasReminderAttachments
+    ? ", ra.attachments_payload AS attachments_payload"
+    : ", '' AS attachments_payload";
+$attachmentJoinSql = $hasReminderAttachments
+    ? "LEFT JOIN (
+        SELECT
+            reminder_id,
+            GROUP_CONCAT(CONCAT(TO_BASE64(stored_name), '::', TO_BASE64(original_name)) SEPARATOR '||') AS attachments_payload
+        FROM reminder_attachments
+        GROUP BY reminder_id
+      ) ra ON ra.reminder_id = r.id"
+    : "";
+
 $sql = "
     SELECT DISTINCT
         r.*,
@@ -25,6 +44,7 @@ $sql = "
         cr.REP_NAME AS account_rep_name,
         ts.team_name,
         wt.task_name
+        {$attachmentSelectSql}
     FROM reminders r
     LEFT JOIN users u
         ON u.id = r.who
@@ -40,6 +60,7 @@ $sql = "
         ON ts.team_id = r.team
     LEFT JOIN task_list wt
         ON wt.id = r.work_type
+    {$attachmentJoinSql}
     {$whereSql}
     ORDER BY r.id DESC
 ";
@@ -78,6 +99,7 @@ $qry = $conn->query($sql);
                         <th>Scheduled End Date</th>
                         <th>Platform</th>
                         <th>Meeting Link</th>
+                        <th>Attachment</th>
                         <th>Description</th>
                         <th>Date Created</th>
                     </tr>
@@ -154,6 +176,29 @@ $qry = $conn->query($sql);
                                             Open Link
                                         </a>
                                     <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php
+                                    $attachmentsPayload = (string)($row['attachments_payload'] ?? '');
+                                    $attachmentEntries = $attachmentsPayload !== '' ? explode('||', $attachmentsPayload) : [];
+                                    foreach ($attachmentEntries as $attachmentEntry):
+                                        $parts = explode('::', (string)$attachmentEntry, 2);
+                                        $storedNameEncoded = (string)($parts[0] ?? '');
+                                        $originalNameEncoded = (string)($parts[1] ?? '');
+                                        $attachmentStoredName = base64_decode($storedNameEncoded, true);
+                                        $attachmentOriginalName = base64_decode($originalNameEncoded, true);
+                                        if ($attachmentStoredName === false || $attachmentStoredName === '') {
+                                            continue;
+                                        }
+                                        if ($attachmentOriginalName === false || $attachmentOriginalName === '') {
+                                            $attachmentOriginalName = $attachmentStoredName;
+                                        }
+                                    ?>
+                                        <a href="<?php echo htmlspecialchars('reminder_uploads/' . $attachmentStoredName); ?>" target="_blank" rel="noopener noreferrer">Download</a>
+                                        <br>
+                                        <small class="text-muted"><?php echo htmlspecialchars($attachmentOriginalName); ?></small>
+                                        <br>
+                                    <?php endforeach; ?>
                                 </td>
                                 <td><?php echo htmlspecialchars((string)($row['description'] ?? '')); ?></td>
                                  <td><?php echo htmlspecialchars($date_created); ?></td>

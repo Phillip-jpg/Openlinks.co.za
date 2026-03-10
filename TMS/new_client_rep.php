@@ -31,19 +31,34 @@
 	                    <div class="col-md-6">
 	                        <div class="form-group">
 	                            <label for="" class="control-label">Client</label>
-	                            <select class="form-control form-control-sm select2" name="CLIENT_ID" id="CLIENT_ID" required>
-	                                <option value="0"></option>
+	                            <select class="form-control form-control-sm select2" name="CLIENT_ID[]" id="CLIENT_ID" multiple="multiple" required>
 	                                <?php
-	                                $selectedClientId = isset($CLIENT_ID) ? (int)$CLIENT_ID : 0;
+	                                $selectedClientIdsForForm = [];
+	                                if (isset($selectedClientIds) && is_array($selectedClientIds)) {
+	                                    foreach ($selectedClientIds as $selectedClientId) {
+	                                        $selectedClientId = (int)$selectedClientId;
+	                                        if ($selectedClientId > 0) {
+	                                            $selectedClientIdsForForm[$selectedClientId] = $selectedClientId;
+	                                        }
+	                                    }
+	                                } elseif (isset($CLIENT_ID)) {
+	                                    $singleClientId = (int)$CLIENT_ID;
+	                                    if ($singleClientId > 0) {
+	                                        $selectedClientIdsForForm[$singleClientId] = $singleClientId;
+	                                    }
+	                                }
+	                                $selectedClientIdsForForm = array_values($selectedClientIdsForForm);
+	                                $selectedClientLookup = array_flip($selectedClientIdsForForm);
+
 	                                $loginType = (int)($_SESSION['login_type'] ?? 0);
 	                                $loginId = (int)($_SESSION['login_id'] ?? 0);
 
 	                                if ($loginType === 1) {
 	                                    $clientSql = "SELECT CLIENT_ID, company_name FROM yasccoza_openlink_market.client ORDER BY company_name ASC";
 	                                } else {
-	                                    $clientSql = "SELECT CLIENT_ID, company_name FROM yasccoza_openlink_market.client WHERE creator_id = $loginId AND orbiter_id=0";
-	                                    if ($selectedClientId > 0) {
-	                                        $clientSql .= " OR CLIENT_ID = $selectedClientId";
+	                                    $clientSql = "SELECT CLIENT_ID, company_name FROM yasccoza_openlink_market.client WHERE (creator_id = $loginId AND orbiter_id = 0)";
+	                                    if (!empty($selectedClientIdsForForm)) {
+	                                        $clientSql .= " OR CLIENT_ID IN (" . implode(',', array_map('intval', $selectedClientIdsForForm)) . ")";
 	                                    }
 	                                    $clientSql .= " ORDER BY company_name ASC";
 	                                }
@@ -52,7 +67,7 @@
 	                                if ($client) {
 	                                    while ($row = $client->fetch_assoc()):
 	                                        $clientId = (int)$row['CLIENT_ID'];
-	                                        $isSelectedClient = ($selectedClientId === $clientId) ? 'selected' : '';
+	                                        $isSelectedClient = isset($selectedClientLookup[$clientId]) ? 'selected' : '';
 	                                ?>
 	                                <option value="<?php echo $clientId; ?>" <?php echo $isSelectedClient; ?>>
 	                                    <?php echo ucwords($row['company_name']) . ' (' . $clientId . ')'; ?>
@@ -62,6 +77,7 @@
 	                                }
 	                                ?>
 	                            </select>
+	                            <small class="form-text text-muted">Select one or more clients.</small>
 	                        </div>
 	                        <br>
 	                        <div class="form-group">
@@ -92,13 +108,13 @@
     $('#manage_rep').submit(function(e) {
         e.preventDefault();
         const $emailField = $('[name="REP_EMAIL"]');
-        const $clientField = $('[name="CLIENT_ID"]');
-        const selectedClientId = parseInt($clientField.val(), 10) || 0;
+        const $clientField = $('[name="CLIENT_ID[]"]');
+        const selectedClientIds = $clientField.val() || [];
 
         $emailField.removeClass('border-danger');
         $clientField.removeClass('border-danger');
 
-        if (selectedClientId <= 0) {
+        if (!Array.isArray(selectedClientIds) || selectedClientIds.length === 0) {
             $clientField.addClass('border-danger');
             alert_toast('Please select a client before saving.', "warning");
             return;
@@ -125,6 +141,8 @@
                 } else if (resp === '3') {
                     $clientField.addClass("border-danger");
                     alert_toast('Please select a client before saving.', "warning");
+                } else if (resp === '4') {
+                    alert_toast('Orbited reps cannot be edited.', "warning");
                 } else {
                     alert_toast('Unable to save client rep.', "danger");
                 }

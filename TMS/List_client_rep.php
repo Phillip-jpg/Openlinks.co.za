@@ -26,6 +26,7 @@
                         <th>REP_ID</th>
                         <th>REP_NAME</th>
                         <th>Representing Company</th>
+                        <th>Orbit Status</th>
                         <th>Role</th>
                         <th>Email</th>
                         <th>Contact</th>
@@ -35,30 +36,72 @@
                 <tbody>
                     <?php
                     $i = 1;
+                    $loginType = (int)($_SESSION['login_type'] ?? 0);
+                    $loginId = (int)($_SESSION['login_id'] ?? 0);
               
-                    if ($_SESSION['login_type'] == 2) {
+                    if ($loginType == 2) {
                     
-                    $qry = $conn->query("SELECT DISTINCT client_rep.*, yasccoza_openlink_market.client.company_name
-                    FROM client_rep
-                    LEFT JOIN yasccoza_openlink_market.client
-                    ON client_rep.CLIENT_ID = yasccoza_openlink_market.client.CLIENT_ID where client_rep.USER_CREATED={$_SESSION['login_id']};");
+                    $qry = $conn->query("SELECT
+                            cr.REP_ID,
+                            MAX(cr.REP_NAME) AS REP_NAME,
+                            GROUP_CONCAT(DISTINCT c.company_name ORDER BY c.company_name ASC SEPARATOR ', ') AS company_name,
+                            CASE
+                                WHEN MAX(CASE WHEN COALESCE(c.orbiter_id, 0) > 0 THEN 1 ELSE 0 END) = 1 THEN 'Orbited'
+                                ELSE 'Not Orbited'
+                            END AS orbit_status,
+                            MAX(cr.ROLE) AS ROLE,
+                            MAX(cr.REP_EMAIL) AS REP_EMAIL,
+                            MAX(cr.REP_CONTACT) AS REP_CONTACT
+                        FROM client_rep cr
+                        INNER JOIN yasccoza_openlink_market.client c
+                            ON cr.CLIENT_ID = c.CLIENT_ID
+                        WHERE c.creator_id = {$loginId}
+                        GROUP BY cr.REP_ID
+                        ORDER BY cr.REP_ID DESC");
                     }
-                    elseif($_SESSION['login_type'] == 3) {
+                    elseif($loginType == 3) {
                         
-                    $qry = $conn->query("SELECT DISTINCT client_rep.*, yasccoza_openlink_market.client.company_name
-                    FROM client_rep
-                    LEFT JOIN yasccoza_openlink_market.client
-                    ON client_rep.CLIENT_ID = yasccoza_openlink_market.client.CLIENT_ID
-                    LEFT JOIN users
-                    ON users.creator_id = client_rep.USER_CREATED
-                    where users.id={$_SESSION['login_id']}");
+                    $qry = $conn->query("SELECT
+                            cr.REP_ID,
+                            MAX(cr.REP_NAME) AS REP_NAME,
+                            GROUP_CONCAT(DISTINCT c.company_name ORDER BY c.company_name ASC SEPARATOR ', ') AS company_name,
+                            CASE
+                                WHEN MAX(CASE WHEN COALESCE(c.orbiter_id, 0) > 0 THEN 1 ELSE 0 END) = 1 THEN 'Orbited'
+                                ELSE 'Not Orbited'
+                            END AS orbit_status,
+                            MAX(cr.ROLE) AS ROLE,
+                            MAX(cr.REP_EMAIL) AS REP_EMAIL,
+                            MAX(cr.REP_CONTACT) AS REP_CONTACT
+                        FROM client_rep cr
+                        INNER JOIN yasccoza_openlink_market.client c
+                            ON cr.CLIENT_ID = c.CLIENT_ID
+                        WHERE EXISTS (
+                            SELECT 1
+                            FROM users member_access
+                            WHERE member_access.id = {$loginId}
+                              AND member_access.creator_id = c.creator_id
+                        )
+                        GROUP BY cr.REP_ID
+                        ORDER BY cr.REP_ID DESC");
                         
                     }else{
                         
-                         $qry = $conn->query("SELECT DISTINCT client_rep.*, yasccoza_openlink_market.client.company_name
-                    FROM client_rep
-                    LEFT JOIN yasccoza_openlink_market.client
-                    ON client_rep.CLIENT_ID = yasccoza_openlink_market.client.CLIENT_ID;");
+                         $qry = $conn->query("SELECT
+                            cr.REP_ID,
+                            MAX(cr.REP_NAME) AS REP_NAME,
+                            GROUP_CONCAT(DISTINCT c.company_name ORDER BY c.company_name ASC SEPARATOR ', ') AS company_name,
+                            CASE
+                                WHEN MAX(CASE WHEN COALESCE(c.orbiter_id, 0) > 0 THEN 1 ELSE 0 END) = 1 THEN 'Orbited'
+                                ELSE 'Not Orbited'
+                            END AS orbit_status,
+                            MAX(cr.ROLE) AS ROLE,
+                            MAX(cr.REP_EMAIL) AS REP_EMAIL,
+                            MAX(cr.REP_CONTACT) AS REP_CONTACT
+                        FROM client_rep cr
+                        LEFT JOIN yasccoza_openlink_market.client c
+                            ON cr.CLIENT_ID = c.CLIENT_ID
+                        GROUP BY cr.REP_ID
+                        ORDER BY cr.REP_ID DESC");
                         
                     }
                     while ($row = $qry->fetch_assoc()):
@@ -69,6 +112,11 @@
                         <td style="font-weight: lighter;"><b><?php echo $row['REP_ID'] ?></b></td>
                         <td style="font-weight: lighter;"><b><?php echo $row['REP_NAME'] ?></b></td>
                         <td style="font-weight: lighter;"><b><?php echo $row['company_name'] ?></b></td>
+                        <td style="font-weight: lighter;">
+                            <b style="color: <?php echo ($row['orbit_status'] === 'Orbited') ? '#0f9d58' : '#c62828'; ?>">
+                                <?php echo $row['orbit_status']; ?>
+                            </b>
+                        </td>
                         <td style="font-weight: lighter;"><b><?php echo $row['ROLE'] ?></b></td>
                         <td style="font-weight: lighter;"><b><?php echo $row['REP_EMAIL'] ?></b></td>
                         <td style="font-weight: lighter;"><b><?php echo $row['REP_CONTACT'] ?></b></td>
@@ -88,8 +136,12 @@
                                     $hash = hash_hmac('sha256', $payload, $secret);
                                     $encoded = base64_encode($payload . ':' . $hash);
                                     ?>
+                                 <?php if ($loginType == 2 && ($row['orbit_status'] ?? '') === 'Not Orbited'): ?>
                                  <a class="dropdown-item" href="./index.php?page=edit_rep&id=<?php echo urlencode($encoded); ?>">Edit</a>
                                  <div class="dropdown-divider"></div>
+                                 <?php elseif ($loginType == 2): ?>
+                                 <span class="dropdown-item-text text-muted">Orbited rep is view-only</span>
+                                 <?php endif; ?>
                                  <!-- <a class="dropdown-item delete_rep" href="javascript:void(0)" data-id="<?php echo $row['REP_ID'] ?>">Delete</a> -->
                              </div>
                                 

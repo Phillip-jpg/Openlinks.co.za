@@ -87,6 +87,66 @@ function ensureReminderIntervalTable(mysqli $conn): void
     }
 }
 
+function reminderAttachmentTableExists(mysqli $conn): bool
+{
+    static $checked = false;
+    static $exists = false;
+
+    if ($checked) {
+        return $exists;
+    }
+
+    $check = $conn->query("SHOW TABLES LIKE 'reminder_attachments'");
+    $exists = $check instanceof mysqli_result && $check->num_rows > 0;
+    $checked = true;
+
+    return $exists;
+}
+
+function fetchReminderAttachmentsForEmail(mysqli $conn, int $reminderId): array
+{
+    if ($reminderId <= 0 || !reminderAttachmentTableExists($conn)) {
+        return [];
+    }
+
+    $stmt = $conn->prepare("
+        SELECT stored_name, original_name
+        FROM reminder_attachments
+        WHERE reminder_id = ?
+        ORDER BY id ASC
+    ");
+    if (!$stmt) {
+        return [];
+    }
+
+    $stmt->bind_param('i', $reminderId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $attachments = [];
+    $storageDir = __DIR__ . DIRECTORY_SEPARATOR . 'reminder_uploads';
+    while ($row = $res->fetch_assoc()) {
+        $storedName = basename(trim((string)($row['stored_name'] ?? '')));
+        if ($storedName === '') {
+            continue;
+        }
+
+        $path = $storageDir . DIRECTORY_SEPARATOR . $storedName;
+        if (!is_file($path)) {
+            continue;
+        }
+
+        $originalName = basename(trim((string)($row['original_name'] ?? '')));
+        $attachments[] = [
+            'path' => $path,
+            'name' => $originalName !== '' ? $originalName : $storedName,
+        ];
+    }
+
+    $stmt->close();
+    return $attachments;
+}
+
 function getParentFilter(): int
 {
     if (PHP_SAPI === 'cli' && isset($GLOBALS['argv']) && is_array($GLOBALS['argv'])) {
@@ -572,10 +632,11 @@ function sendReminderIntervalEmails(mysqli $conn, array $parent, string $interva
     ];
 
     $subject = 'Reminder Trigger: ' . (string)$parent['reminder_name'] . ' - ' . $intervalDate;
+    $attachments = fetchReminderAttachmentsForEmail($conn, (int)($parent['id'] ?? 0));
     $failed = [];
     foreach ($recipients as $recipient) {
         $html = buildTriggeredReminderEmailHtml((string)$recipient['name'], $payload);
-        $ok = sendEmailNotification((string)$recipient['email'], $subject, $html);
+        $ok = sendEmailNotification((string)$recipient['email'], $subject, $html, $attachments);
         if (!$ok) {
             $failed[] = (string)$recipient['email'];
         }

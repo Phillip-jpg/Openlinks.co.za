@@ -156,10 +156,280 @@ if ($qry4) {
 ?>
 
 
-<div class="col-lg-12">
+<style>
+    .job-view-modern {
+        --surface: #ffffff;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #dbe7f5;
+        --brand-1: #0f4c81;
+        --brand-2: #0b7db5;
+        --brand-3: #5eb3f3;
+        margin-bottom: 1.25rem;
+    }
+
+    .job-view-modern .back-nav-btn {
+        border: 0;
+        border-radius: 999px;
+        padding: 0.44rem 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: linear-gradient(125deg, var(--brand-1), var(--brand-2));
+        box-shadow: 0 8px 18px rgba(11, 125, 181, 0.26);
+    }
+
+    .job-view-modern .back-nav-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .job-view-modern .job-panel {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: linear-gradient(140deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+        padding: 1.2rem 1.1rem;
+    }
+
+    .job-view-modern .job-id-title {
+        margin-bottom: 0.7rem;
+        color: var(--brand-2);
+        font-weight: 700;
+        font-size: 0.98rem;
+    }
+
+    .job-view-modern dl {
+        margin-bottom: 0.95rem;
+    }
+
+    .job-view-modern dd {
+        color: #334155;
+        margin-bottom: 0.45rem;
+    }
+
+    .job-view-modern .border-bottom.border-primary {
+        border-bottom: 1px solid var(--line) !important;
+        border-color: var(--line) !important;
+        color: #1e3a5f;
+        display: inline-block;
+        font-size: 0.76rem;
+        letter-spacing: 0.05em;
+        padding-bottom: 0.2rem;
+        text-transform: uppercase;
+    }
+
+    .job-view-modern a {
+        color: var(--brand-2);
+    }
+
+    .job-view-modern a:hover {
+        color: var(--brand-1);
+        text-decoration: none;
+    }
+
+    .job-view-modern .badge {
+        border-radius: 999px;
+        font-size: 0.73rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 0.38em 0.72em;
+    }
+
+    .job-view-modern .badge-info {
+        background: #dff3ff;
+        color: #075985;
+    }
+
+    .job-view-modern .manager-avatar {
+        width: 56px;
+        height: 56px;
+        border: 2px solid #dbeafe !important;
+        object-fit: cover;
+    }
+
+    .job-view-modern .team-members {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-top: 0.25rem;
+    }
+
+    .job-view-modern .member-chip {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        color: #1e3a8a;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.24rem 0.62rem;
+    }
+
+    .job-view-modern .file-link {
+        align-items: center;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: 0 5px 14px rgba(15, 23, 42, 0.08);
+        display: inline-flex;
+        height: 58px;
+        justify-content: center;
+        margin-right: 0.45rem;
+        width: 58px;
+    }
+
+    .job-view-modern .file-link img {
+        height: 34px;
+        width: 34px;
+    }
+
+    .job-view-modern .description-text {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        margin-top: 0.35rem;
+        padding: 0.85rem 0.95rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .job-view-modern .respond-job-btn {
+        display: inline-flex;
+        align-items: center;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.5rem 1rem;
+        font-size: 0.83rem;
+        font-weight: 600;
+        margin-top: 0.4rem;
+        background: linear-gradient(120deg, var(--brand-1), var(--brand-2));
+        box-shadow: 0 8px 20px rgba(11, 125, 181, 0.28);
+        color: #fff !important;
+    }
+
+    .job-view-modern .client-rep-pending {
+        color: #dc2626;
+        font-weight: 600;
+    }
+
+    .job-view-modern .activity-group-title {
+        color: var(--ink);
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 0.45rem;
+    }
+
+    .job-view-modern .activity-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #f8fbff;
+        margin-bottom: 0.95rem;
+        padding: 0.75rem 0.9rem;
+    }
+
+    .job-view-modern .activity-label {
+        color: var(--muted);
+        display: block;
+        font-size: 0.74rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.45rem;
+        text-transform: uppercase;
+    }
+
+    .job-view-modern .activity-text {
+        color: #334155;
+        margin: 0;
+    }
+
+    .job-view-modern .members-title {
+        color: #1e293b;
+        font-weight: 700;
+        margin: 0.3rem 0 0.85rem;
+    }
+
+    .job-view-modern .member-activity-item {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        margin-bottom: 0.6rem;
+        padding: 0.55rem 0.75rem;
+    }
+
+    .job-view-modern .member-activity-item .activity-name {
+        color: var(--brand-1);
+        font-weight: 700;
+        margin-right: 0.22rem;
+    }
+
+    .job-view-modern .empty-note {
+        color: #94a3b8;
+        font-style: italic;
+        margin-bottom: 0.6rem;
+    }
+
+    .job-view-modern .users-list > li img {
+        border-radius: 50%;
+        height: 67px;
+        object-fit: cover;
+        width: 67px;
+    }
+
+    .job-view-modern .users-list > li {
+        width: 33.33% !important;
+    }
+
+    .job-view-modern .truncate {
+        -webkit-line-clamp: 1 !important;
+    }
+
+    @media (max-width: 768px) {
+        .job-view-modern .job-panel {
+            border-radius: 14px;
+            padding: 0.95rem 0.85rem;
+        }
+
+        .job-view-modern .activity-group-title {
+            font-size: 0.88rem;
+        }
+
+        .job-view-modern .member-activity-item {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0.65rem;
+        }
+    }
+
+    /* Readability overrides */
+    .job-view-modern {
+        font-size: 0.98rem;
+    }
+
+    .job-view-modern .border-bottom.border-primary {
+        font-size: 0.82rem;
+    }
+
+    .job-view-modern dd,
+    .job-view-modern .activity-text,
+    .job-view-modern .description-text {
+        font-size: 0.94rem;
+    }
+
+    .job-view-modern .activity-label,
+    .job-view-modern .member-chip {
+        font-size: 0.84rem;
+    }
+
+    .job-view-modern .badge,
+    .job-view-modern .respond-job-btn,
+    .job-view-modern .back-nav-btn {
+        font-size: 0.84rem;
+    }
+</style>
+
+<div class="col-lg-12 job-view-modern">
     <?php if ($backPage !== ''): ?>
     <div class="mb-3">
-        <a href="./index.php?page=<?php echo htmlspecialchars($backPage, ENT_QUOTES, 'UTF-8'); ?><?php echo (in_array($backPage, ['jobs_to_manage_level1', 'my_team_jobs_to_manage_lvl_1'], true) && $backTeamRef !== '') ? '&team_id=' . rawurlencode($backTeamRef) : ''; ?>" class="btn btn-primary btn-sm">
+        <a href="./index.php?page=<?php echo htmlspecialchars($backPage, ENT_QUOTES, 'UTF-8'); ?><?php echo (in_array($backPage, ['jobs_to_manage_level1', 'my_team_jobs_to_manage_lvl_1'], true) && $backTeamRef !== '') ? '&team_id=' . rawurlencode($backTeamRef) : ''; ?>" class="btn btn-primary btn-sm back-nav-btn">
             <?php
                 if ($backPage === 'productivity_pipeline') {
                     echo 'Back to Productivity Pipeline';
@@ -182,12 +452,12 @@ if ($qry4) {
 <?php endif; ?>
 	<div class="row">
 		<div class="col-md-12">
-			<div class="callout callout-info">
+			<div class="callout callout-info job-panel">
 				<div class="col-md-12">
 					<div class="row">
 						<div class="col-sm-6">
 							<dl>
-							  <p style="color:#17a2b8; font-weight:bold">Job ID: <?php echo ucwords($id) ?></p>
+							  <p class="job-id-title">Job ID: <?php echo ucwords($id) ?></p>
 								<dt><b class="border-bottom border-primary">Job Name</b></dt>
 								<dd><?php echo ucwords($name) ?></dd>
 								<br>
@@ -239,7 +509,7 @@ if ($qry4) {
 	
     <?php endforeach; ?>
 <?php else: ?>
-    <p>No work types available!</p>
+    <p class="empty-note">No work types available!</p>
 <?php endif; ?>
 							</dl>
 							<!-- Display the file_path and add the download button (if available) -->
@@ -258,7 +528,7 @@ foreach ($files as $file) {
 
     // Check if the URL contains "Response_document"
     if (strpos($url, "Response_document") === false) {
-        echo "<a style='padding:3.5px;' href='$filePath' target='_blank'>
+        echo "<a class='file-link' href='$filePath' target='_blank' rel='noopener noreferrer'>
                 <img src='../TIMS/Images/file.png' height='50' width='50'>
               </a>";
     }
@@ -290,7 +560,7 @@ foreach ($files as $file) {
 								<dd>
 									<?php if(isset($manager['id'])) : ?>
 									<div class="d-flex align-items-center mt-1">
-										<img class="img-circle img-thumbnail p-0 shadow-sm border-info img-sm mr-3" src="assets/uploads/<?php echo $manager['avatar'] ?>" alt="Avatar">
+										<img class="img-circle img-thumbnail p-0 shadow-sm border-info img-sm mr-3 manager-avatar" src="assets/uploads/<?php echo $manager['avatar'] ?>" alt="Avatar">
 										<b><?php echo ucwords($manager['name']) ?></b>
 									</div>
 									<?php else: ?>
@@ -301,8 +571,8 @@ foreach ($files as $file) {
 								<br>
 								<div>
 								<dt><b class="border-bottom border-primary">Team Members</b></dt>
-								<div><?php foreach ($userNames as $userName): ?>
-									<span><?php echo html_entity_decode($userName.","); ?></span>
+								<div class="team-members"><?php foreach ($userNames as $userName): ?>
+									<span class="member-chip"><?php echo html_entity_decode($userName); ?></span>
 								<?php endforeach; ?>
 								</div>		
 							
@@ -350,7 +620,7 @@ LEFT JOIN yasccoza_openlink_smmes.register smme ON pl.CLIENT_ID = smme.SMME_ID W
 
 								} else{
 								
-									echo "<dd style='color:red'>Available upon job completion !</dd>";
+									echo "<dd class='client-rep-pending'>Available upon job completion !</dd>";
 								}
 									?>
 							</dl>
@@ -366,12 +636,12 @@ LEFT JOIN yasccoza_openlink_smmes.register smme ON pl.CLIENT_ID = smme.SMME_ID W
 				<dl>
 
 				<dt><b class="border-bottom border-primary">Description</b></dt>
-								<dd style="word-wrap: break-word;"><?php echo html_entity_decode($description) ?></dd>
+								<dd class="description-text"><?php echo html_entity_decode($description) ?></dd>
 
 				</dl>
                  
 				</div>
-				<a href="../TIMS/ADMIN/job_order_info.php?d=10017&q=1&p=14&userid=<?php echo $login_id?>">Respond to Job</a>
+				<a class="respond-job-btn" href="../TIMS/ADMIN/job_order_info.php?d=10017&q=1&p=14&userid=<?php echo $login_id?>">Respond to Job</a>
 				</div>
 			</div>
 		</div>
@@ -380,18 +650,18 @@ LEFT JOIN yasccoza_openlink_smmes.register smme ON pl.CLIENT_ID = smme.SMME_ID W
 	
 </div>
 
-<div class="col-lg-12">
+<div class="col-lg-12 job-view-modern">
     <div class="row">
         <div class="col-md-12">
-            <div class="callout callout-info">
+            <div class="callout callout-info job-panel">
                 <div class="col-md-12">
                     <div class="row">
                         <?php if (isset($taskIdz) && is_array($taskIdz) && count($taskIdz) > 0): ?>
                             <?php foreach ($taskIdz as $index => $taskId): ?>
                                 <div class="col-md-6">
-                                    <label><?php echo html_entity_decode($taskNames[$index]); ?></label>
-									<div class="form-group" style="padding-left:20px; border:1px solid #17A2BB">
-    <label>Activities for work type</label>
+                                    <label class="activity-group-title"><?php echo html_entity_decode($taskNames[$index]); ?></label>
+									<div class="form-group activity-card">
+    <label class="activity-label">Activities for work type</label>
     <?php
     $qry = $conn->query("SELECT name FROM user_productivity WHERE task_id = $taskId");
     if ($qry) {
@@ -404,7 +674,7 @@ LEFT JOIN yasccoza_openlink_smmes.register smme ON pl.CLIENT_ID = smme.SMME_ID W
         }
 
         $namesString = implode(', ', $names); // Join names with commas
-        echo "<p class='form-control-plaintext'>$namesString</p>";
+        echo "<p class='form-control-plaintext activity-text'>$namesString</p>";
     } else {
         echo "Query failed: " . $conn->error;
     }
@@ -416,7 +686,7 @@ LEFT JOIN yasccoza_openlink_smmes.register smme ON pl.CLIENT_ID = smme.SMME_ID W
 
                             <div class="col-md-12">
                                 <br>
-                                <p class="form-control-plaintext" style="font-weight: bold;">Members Assigned to those work activities</p>
+                                <p class="form-control-plaintext members-title">Members Assigned to those work activities</p>
 
 								<?php
 // Assuming you've already established a database connection and assigned it to $conn.
@@ -440,7 +710,7 @@ if (!empty($projectId)) {
                     // Loop through the results and display the full names
                     while ($row = $result->fetch_assoc()) {
 
-							echo "<div class='form-group col-6' style='border:0.5px solid #17A2BB'><p class='form-control-plaintext'><span style='font-weight:bold'>" . $row['name'] . "</span> " . $row['full_name'] . "</p></div>";
+							echo "<div class='form-group col-6 member-activity-item'><p class='form-control-plaintext'><span class='activity-name'>" . $row['name'] . "</span> " . $row['full_name'] . "</p></div>";
 
                     }
                 } else {
@@ -456,7 +726,7 @@ if (!empty($projectId)) {
                             </div>
 
                         <?php else: ?>
-                            <p>No duties Assigned !</p>
+                            <p class="empty-note">No duties Assigned !</p>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -469,20 +739,6 @@ if (!empty($projectId)) {
 	
 	
 </div>
-<style>
-	.users-list>li img {
-	    border-radius: 50%;
-	    height: 67px;
-	    width: 67px;
-	    object-fit: cover;
-	}
-	.users-list>li {
-		width: 33.33% !important
-	}
-	.truncate {
-		-webkit-line-clamp:1 !important;
-	}
-</style>
 <script>
 	$('#new_task').click(function(){
 		uni_modal("New Task For <?php echo ucwords($name) ?>","manage_task.php?pid=<?php echo $id ?>","mid-large")
